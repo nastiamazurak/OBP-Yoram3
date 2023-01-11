@@ -167,7 +167,7 @@ def SA_algorithm(step_max=1000, alpha=1, time_limit=10):
         else:
             # normalization to make sure that the probability is between 0 and 1
             improvement_ratio = ( (obj-new_obj) / obj )
-            # need to check again!!! T=0 is a feasibility problem
+            # may need to check again!!!
             prob = alpha * math.exp(T * improvement_ratio)
             # accept the worse solution:
             if prob > random.uniform(0, 1):
