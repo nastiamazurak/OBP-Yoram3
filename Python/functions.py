@@ -163,7 +163,7 @@ def SA_algorithm(step_max=1000, alpha=1, time_limit=10):
         if new_obj<=obj:
             obj=new_obj
 
-        # if the new solution is worse than the previous solution (maximization)
+        # if the new solution is worse than the previous solution (minimization)
         else:
             # normalization to make sure that the probability is between 0 and 1
             improvement_ratio = ( (obj-new_obj) / obj )
