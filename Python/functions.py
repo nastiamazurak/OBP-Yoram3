@@ -17,17 +17,10 @@ import math
 import random
 from timeit import default_timer as timer
 from parameters import jobs, sets
-
+from itertools import combinations
 # =============================================================================
 # This section includes the functions that run the algorithm
 # =============================================================================
-
-def generate_nurse(number):
-    nurses = []
-    # i = nurse_id, can be something different
-    for i in range(number):
-        nurses.append(i)
-    return nurses
 
 def calculate_obj(sol):
     # min max objective:
@@ -46,9 +39,41 @@ def calculate_obj(sol):
     
     return obj
 
-def check_feasibility(sol):
-    # This is the function that will mess up everything 
+def check_overlap(sol):
+    # This is the function to check the overlaps in nurse's schedule
+    for i in nurses:
+        for d in days:
+            for a,b in list(combinations(sol['w'][i,d], 2)):
+                # if there is any overlap, give False
+                if a[1] < b[0] or a[0] > b[1] or (a[0] < b[0] and a[1] > b[1]) or (a[0] > b[0] and a[1] < b[1]):
+                    return False
     return True
+                    
+def check_feasibility(sol):
+    # This is the function that will mess up everything...
+    
+    # if check_overlap(sol) and ........(other constraint controller functions):
+        
+    # for example:
+    if check_overlap(sol):
+        return True
+    else:
+        return False
+
+def check_enough_nurse(number):
+    # initial check if # of nurses is enough    
+    return True
+
+def generate_nurse(number):
+    if check_enough_nurse(number):
+        nurses = []
+        # i = nurse_id, can be something different
+        for i in range(number):
+            nurses.append(i+1)
+        return nurses
+    else:
+        raise ValueError('Number of healthcare professionals is insufficient!')
+
 
 def find_x(z):
     # If client c sees nurse i during the week:
@@ -66,6 +91,18 @@ def find_x(z):
                     break  
     return x
 
+def find_w(z):
+    # time slots that nurse i is busy on day d:
+    w={}
+    for i in nurses:
+        for d in days:
+            w[i,d]=[]
+            for j in jobs:
+                if z[i,j,d] == 1:
+                    w[i,d].append([jobs[j]['tw_start'],jobs[j]['tw_due']])
+    return w
+                    
+                    
 def generate_neighbour(sol):
     global nurses
     global jobs
@@ -81,6 +118,7 @@ def generate_neighbour(sol):
         sol['z'][cand_i,cand_j,cand_d] = 1
     
     sol['x'] = find_x(sol['z'])
+    sol['w'] = find_w(sol['z'])
     
     return sol
 
@@ -88,16 +126,26 @@ def generate_initial_solution():
     #generate initial random solution 
     sol={}
     # If nurse i is assigned to job j at day d:
+        
+    
+    #Let's assume that initially nurses=jobs:
     z={}
     for i in nurses:
         for j in jobs:
             for d in days:
                 z[i,j,d] = 0
+
+    for i in nurses:
+        for d in days:
+            z[i,i,d] = 1
                 
     # If client c sees nurse i during the week:
     x = find_x(z)
     
-    sol={'z':z,'x':x}
+    # time slots that nurse i is busy on day d:
+    w = find_w(z)
+    
+    sol={'z':z,'x':x,'w':w}
     
     #check feasibility 
     if check_feasibility(sol):  
@@ -116,19 +164,21 @@ def get_neighbour(sol):
     else:
         return generate_neighbour(sol)
 
-def greedy_algorithm(step_max=1000):
+def greedy_algorithm(step_max=100):
     global parameters
     # generate initial random solution
     sol=generate_initial_solution()
     step=0
+    obj_list=[]
+    obj=calculate_obj(sol)
     while step<step_max:
         
         # create a neighbour
         new_sol = get_neighbour(sol) 
         
         # compare objective functions
-        obj = calculate_obj(sol)
         new_obj = calculate_obj(new_sol)
+        
         # if the new solution is better than the previous solution (minimization)
         if new_obj<obj:
             obj=new_obj
@@ -137,11 +187,11 @@ def greedy_algorithm(step_max=1000):
         else:
             break
             # OR CONTINUE WITH SOMETHING FANCY???
-            
+        obj_list.append(obj)
         step+=1
-    return obj
+    return obj_list
         
-def SA_algorithm(step_max=1000, alpha=1, time_limit=10):
+def SA_algorithm(step_max=100, alpha=1, time_limit=10):
     global parameters
     
     start = timer()
@@ -149,16 +199,18 @@ def SA_algorithm(step_max=1000, alpha=1, time_limit=10):
     # generate initial random solution
     sol=generate_initial_solution()
     step=0
+    obj_list=[]
+    obj=calculate_obj(sol)
     while step<step_max:
-        # define the temperature
+        # define the temperature (can be logartihmic, too)
         T=1-step/step_max
         
         # create a neighbour
         new_sol = get_neighbour(sol) 
         
         # compare objective functions
-        obj = calculate_obj(sol)
         new_obj = calculate_obj(new_sol)
+        
         # if the new solution is better than the previous solution (minimization)
         if new_obj<=obj:
             obj=new_obj
@@ -166,22 +218,23 @@ def SA_algorithm(step_max=1000, alpha=1, time_limit=10):
         # if the new solution is worse than the previous solution (minimization)
         else:
             # normalization to make sure that the probability is between 0 and 1
-            improvement_ratio = ( (obj-new_obj) / obj )
-            # may need to check again!!!
-            prob = alpha * math.exp(T * improvement_ratio)
+            improvement_ratio = ( (new_obj-obj) / obj )
+            # alpha should be determined/tested!!!
+            prob = math.exp(-alpha/(T*improvement_ratio))
             # accept the worse solution:
-            if prob > random.uniform(0, 1):
+
+            if prob > random.uniform(0, 1):    
                 obj=new_obj
         
-        current = timer()
+        obj_list.append(obj)
         
+        current = timer()
         # bored of waiting ? (not necessary)
         if current-start > time_limit:
             break
         else:
             step+=1
-            
-    return obj
+    return obj_list
 
 
 # =============================================================================
@@ -190,7 +243,9 @@ def SA_algorithm(step_max=1000, alpha=1, time_limit=10):
 
 days = sets['days']
 clients = sets['clients']
-nurses = generate_nurse(15)
-print(greedy_algorithm())      
-print(SA_algorithm()) 
 
+#Initially let's say number of nurses equal to number of jobs to ensure feasibility:
+number_nurses = len(jobs)
+nurses = generate_nurse(number_nurses)
+print(greedy_algorithm())
+print(SA_algorithm())

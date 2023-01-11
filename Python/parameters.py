@@ -28,6 +28,13 @@ try:
 except:    
     raise ValueError('Wrong file name!')
 
+# convert time window hours to minutes, for example: 02:30 = 150
+def hms_to_s(s):
+    t = 0
+    for u in s.split(':')[:-1]:
+        t = 60 * t + int(u)
+    return t
+
 # create dictionary with job id
 jobs = {}
 for row in data:
@@ -39,7 +46,8 @@ for row in data:
         posit+=1
     # convert duration to minutes (not necessary, but why not)
     jobs[row[0]]['duration']/=60
-
+    jobs[row[0]]['tw_start']=hms_to_s(jobs[row[0]]['tw_start'])
+    jobs[row[0]]['tw_due']=hms_to_s(jobs[row[0]]['tw_due'])
 
 # =============================================================================
 # Define sets
