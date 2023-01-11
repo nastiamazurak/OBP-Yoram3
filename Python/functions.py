@@ -133,7 +133,7 @@ def greedy_algorithm(step_max=1000):
         if new_obj<obj:
             obj=new_obj
 
-        # if the new solution is worse than the previous solution (maximization)
+        # if the new solution is worse than the previous solution (minimization)
         else:
             break
             # OR CONTINUE WITH SOMETHING FANCY???
