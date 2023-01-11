@@ -42,7 +42,7 @@ def calculate_obj(sol):
             obj = count
             
     # min total objective, if you want to switch it:
-    # obj = sum(sol)   
+    # obj = sum(sol['x'])   
     
     return obj
 
@@ -50,7 +50,7 @@ def check_feasibility(sol):
     # This is the function that will mess up everything 
     return True
 
-def update_x(z):
+def find_x(z):
     # If client c sees nurse i during the week:
     x={}
     for c in clients:
@@ -80,7 +80,7 @@ def generate_neighbour(sol):
     else:
         sol['z'][cand_i,cand_j,cand_d] = 1
     
-    sol['x'] = update_x(sol['z'])
+    sol['x'] = find_x(sol['z'])
     
     return sol
 
@@ -95,7 +95,7 @@ def generate_initial_solution():
                 z[i,j,d] = 0
                 
     # If client c sees nurse i during the week:
-    x = update_x(z)
+    x = find_x(z)
     
     sol={'z':z,'x':x}
     
@@ -106,15 +106,15 @@ def generate_initial_solution():
         # I think we will need something smarter...
         return generate_initial_solution()
 
-def get_neighbour(old_sol):
+def get_neighbour(sol):
     # do switch
-    new_sol = generate_neighbour(old_sol)
+    new_sol = generate_neighbour(sol)
     
     #check feasibility 
-    if check_feasibility(old_sol):  
+    if check_feasibility(new_sol):  
         return new_sol
     else:
-        return generate_neighbour(old_sol)
+        return generate_neighbour(sol)
 
 def greedy_algorithm(step_max=1000):
     global parameters
