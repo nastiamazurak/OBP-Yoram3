@@ -162,7 +162,7 @@ def get_neighbour(sol):
     if check_feasibility(new_sol):  
         return new_sol
     else:
-        return generate_neighbour(sol)
+        return get_neighbour(generate_neighbour(sol))
 
 def greedy_algorithm(step_max=100):
     global parameters
@@ -247,5 +247,5 @@ clients = sets['clients']
 #Initially let's say number of nurses equal to number of jobs to ensure feasibility:
 number_nurses = len(jobs)
 nurses = generate_nurse(number_nurses)
-print(greedy_algorithm())
-print(SA_algorithm())
+# print(greedy_algorithm())
+# print(SA_algorithm())
