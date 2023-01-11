@@ -162,7 +162,7 @@ def get_neighbour(sol):
     if check_feasibility(new_sol):  
         return new_sol
     else:
-        return get_neighbour(generate_neighbour(sol))
+        return get_neighbour(sol)
 
 def greedy_algorithm(step_max=100):
     global parameters
