@@ -29,8 +29,10 @@ import matplotlib.pyplot as plt
 # =============================================================================
 # Feasbility checks 
 # =============================================================================
-# Overlap is done
+# No overlap
 # Each job is assigned to one nurse
+# 8 hours
+# 5 days
 
 # =============================================================================
 # This section includes the functions that run the algorithm
