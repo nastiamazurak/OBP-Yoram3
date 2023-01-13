@@ -16,7 +16,7 @@ import pandas as pd
 
 try: 
     #read CSV
-    raw_data= pd.read_csv('hhc_job_data.csv')[:3]
+    raw_data= pd.read_csv('hhc_job_data.csv')
     
     #read headers
     header_names=[]
