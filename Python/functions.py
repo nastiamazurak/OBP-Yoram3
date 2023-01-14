@@ -187,7 +187,6 @@ def generate_initial_solution(search_previous):
     number_nurses = 1
     nurses=[number_nurses]
     
-    search_previous
     # function needed for assignment:
     def assign_to_other_nurses(number_nurses,nurses,w_init,z_init,j,d):
         found_one = False
