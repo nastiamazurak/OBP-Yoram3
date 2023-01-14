@@ -115,6 +115,19 @@ def check_enough_nurse(number):
     # initial check if # of nurses is enough    
     return True
 
+def check_final_feasibility(sol):
+    """
+    # check the feasibility of the final solution
+    for j in jobs:
+        for d in days:
+            if jobs[j][d]==1:
+    if :
+        return True
+    else:
+        return False
+    """
+    return True
+
 def generate_nurse(number):
     if check_enough_nurse(number):
         nurses = []
@@ -158,8 +171,9 @@ def generate_initial_solution(option=2):
             
     sol={}
     
-    # OPTION 1: Let's assume that initially # nurses = # jobs and a nurse does single job assigned to her all week:
+    # OPTION 1: Assume that initially # nurses = # jobs and a nurse does single job assigned to her all week:
     # So, we ensure that the initial solution is feasible 100%!
+    # But, not realistic. Try option 2 as long as it is feasible
     if option==1:
         
         number_nurses = len(jobs)
@@ -308,8 +322,8 @@ def generate_initial_solution(option=2):
     else:
         generate_initial_solution(option=2)
 
-          
-def first_scenario(sol,cand_j,cand_d):
+"""
+def first_scenario(sol,cand_i,cand_j,cand_d):
     # not complete 
     
     nurse_candidates=[]
@@ -339,6 +353,64 @@ def first_scenario(sol,cand_j,cand_d):
                 break
             
     return new_i,new_job,new_day
+"""
+          
+def first_scenario(sol,cand_i,cand_j,cand_d):
+    # find another nurse to do job cand_j on day cand_d
+    # cand_i should undertake this nurse's one job
+    
+    nurse_candidates=[]
+    
+    # this nurse should not have another job started 8 hours ago or will start 8 hours later that day.
+    for i in nurses:
+        if sol['w'][i,cand_d]:
+            if check_eight_hours_feasibility(sol['w'],i,cand_j,cand_d):
+                nurse_candidates.append(i)    
+        else:
+            nurse_candidates.append(i)    
+            
+    # this nurse should not have jobs more than 5 days:
+    for i in nurses:
+        if check_five_days_feasibility(sol['w'],i,cand_d):
+            nurse_candidates.append(i)  
+    
+    # Since we will do a switch, we need to ensure that cand_i is eligible to switch to job of a candidate nurse
+    assign_cand_i=False
+    new_i=None
+    new_job = None
+    new_day = None
+    for i in nurse_candidates:
+        if assign_cand_i:
+            break
+        # find a job that the candidate nurse was previously assigned to:
+        assigned_to_i=[]
+        for j in jobs:   
+            for d in days:
+                if sol['z'][i,j,d]==1:
+                    assigned_to_i.append([j,d])
+        # check if cand_i can do it:
+        for j,d in assigned_to_i:
+            tw_new = [jobs[j]['tw_start'],jobs[j]['tw_due']]
+            if check_five_days_feasibility(sol['w'],cand_i,d) and check_eight_hours_feasibility(sol['w'],cand_i,j,d):
+                #if there are other jobs assigned to the nurse on the day job should be done:
+                if sol['w'][cand_i,d]: 
+                    for tw_exist in sol['w'][cand_i,d]:
+                        # check overlaps:
+                        feasible = check_overlap(tw_new,tw_exist)    
+                        if feasible: 
+                            assign_cand_i=True
+                            new_i=i
+                            new_job = j
+                            new_day = d
+                            break 
+            if assign_cand_i:
+                break
+    
+    if assign_cand_i:
+        return new_i,new_job,new_day
+    else:
+        #cannot find any bit to do binary switch, don't switch
+        return cand_i,cand_j,cand_d
 
 def second_scenario(sol,cand_j_list,cand_d_list):
     # not complete   
@@ -380,7 +452,8 @@ def second_scenario(sol,cand_j_list,cand_d_list):
                
 def generate_neighbour(sol):    
     # TWO SCENARIOS (MY HYPOTHESIS...), for now let's skip the second one (a bit complex...)
-
+    cand_i=None
+    
     # 1) DO BINARY SWITCH BETWEEN TWO JOBS (CHANGE THE PAIRINGS), KEEP NUMBER OF CLIENTS THE SAME
     if random.uniform(0, 1) > 0:    
         # choose one job and a day that this job needs to be done:
@@ -398,15 +471,17 @@ def generate_neighbour(sol):
                 cand_i = i
                 break
             
+        new_i,new_j,new_d=None,None,None
         # choose another nurse, do feasibility check::
-        new_i,new_j,new_d = first_scenario(sol,cand_j,cand_d)
+        new_i,new_j,new_d = first_scenario(sol,cand_i,cand_j,cand_d)
 
         # do binary switch between matches:
         sol['z'][cand_i,cand_j,cand_d] = 0
         sol['z'][new_i,cand_j,cand_d] = 1
         
-        sol['z'][cand_i,new_j,new_d] = 1
         sol['z'][new_i,new_j,new_d] = 0
+        sol['z'][cand_i,new_j,new_d] = 1
+        
 
     # 2) DECREASE THE NUMBER OF CLIENTS BY ONE 
     else:           
@@ -491,7 +566,7 @@ def greedy_algorithm(sol,nurses):
         
     return obj_list
         
-def SA_algorithm(sol,nurses,step_max=100, alpha=0.01, time_limit=100):
+def SA_algorithm(sol,nurses,step_max=2000, alpha=0.01, time_limit=600):
     start = timer()
     
     step=0
@@ -525,8 +600,8 @@ def SA_algorithm(sol,nurses,step_max=100, alpha=0.01, time_limit=100):
             if prob > random.uniform(0, 1):    
                 obj=new_obj
         
-        nurses = calculate_number_of_nurses(sol)
-        nurse_list.append(nurses)
+        num_nurses = calculate_number_of_nurses(sol)
+        nurse_list.append(num_nurses)
         obj_list.append(obj)
         
         current = timer()
@@ -550,7 +625,7 @@ def SA_algorithm(sol,nurses,step_max=100, alpha=0.01, time_limit=100):
     print("Computation Time:",current-start)
     print("Objective Value:",obj)
     
-    return obj_list
+    return new_sol, obj_list
 
 
 # =============================================================================
@@ -569,6 +644,11 @@ print(len(nurses))
 
 #algorihtms (not complete yet)
 #print(greedy_algorithm(sol,nurses))
-#print(SA_algorithm(sol,nurses))
+final_sol, obj_list = SA_algorithm(sol,nurses)
+print(nurses)
+#print(final_sol)
+
+#check feasilbility of the final solution (not complete)
+print(check_all_jobs_assigned(nurses,final_sol))
 
 
