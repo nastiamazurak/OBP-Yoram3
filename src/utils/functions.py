@@ -85,8 +85,8 @@ def check_eight_hours_feasibility(w,nurse,check_job,check_day):
     if not w[nurse,check_day]:
         return True
     else:
-        early = jobs[check_job]['tw_start'] - min(w[nurse,check_day])[0]
-        late = max(w[nurse,check_day])[1] - jobs[check_job]['tw_due']
+        early = jobs[check_job]['tw_due'] - min(w[nurse,check_day])[0]
+        late = max(w[nurse,check_day])[1] - jobs[check_job]['tw_start']
         if (early<480 and late<480):
             return True
         else:
@@ -147,19 +147,32 @@ def check_final_feasibility(nurses,sol):
                 break
         if not no_overlap:
             break
-    """
-     for i in nurses:
-         for d in days:
-             for a in sol['w'][i,d]:
-                    if not check_eight_hours_feasibility(sol['w'],i,j,d):
-                        eight_hours=False                        
-                        break
-            if not eight_hours:
-                break
+        
+    for i in nurses:
+        for d in days:
+            if sol['w'][i,d]:
+                max_tw=[0,0] 
+                min_tw=[1440,1440]
+                for tw_check in sol['w'][i,d]:
+                    if tw_check < min_tw:
+                        min_tw = tw_check
+                    if tw_check > max_tw:
+                        max_tw = tw_check
+                diff = max_tw[1]-min_tw[0]
+                if (diff>480):
+                    eight_hours=False  
+                    break
         if not eight_hours:
             break
-    """                
-    if no_overlap and check_all_jobs_assigned(nurses,sol) and eight_hours:
+         
+    for d in days:
+        if not check_five_days_feasibility:
+            five_days=False 
+            break
+        if not five_days:
+            break
+    
+    if no_overlap and check_all_jobs_assigned(nurses,sol) and eight_hours and five_days:
         return True
     else:
         return False
@@ -352,7 +365,19 @@ def first_scenario(sol,cand_i,cand_j,cand_d):
         if check_five_days_feasibility(sol['w'],i,cand_d):
             if sol['w'][i,cand_d]:
                 if check_eight_hours_feasibility(sol['w'],i,cand_j,cand_d):
-                    nurse_candidates.append(i)     
+                    tw_new = [jobs[cand_j]['tw_start'],jobs[cand_j]['tw_due']]       
+                    # if there are other jobs assigned to the nurse on the day job should be done:       
+                    tw_feasible=True
+                    for tw_exist in sol['w'][i,cand_d]:
+                        # if there is an overlap in candidate nurse's schedule on day d, skip to next nurse
+                        feasible = check_overlap(tw_new,tw_exist)                
+                        if not feasible: 
+                            tw_feasible=False
+                            break
+                    if tw_feasible: 
+                        nurse_candidates.append(i)     
+            else:
+                nurse_candidates.append(i)     
     
     # Since we will do a switch, we need to ensure that cand_i is eligible to switch to job of a candidate nurse
     found_one=False
@@ -371,7 +396,7 @@ def first_scenario(sol,cand_i,cand_j,cand_d):
                             if sol['w'][cand_i,d]: 
                                 if check_eight_hours_feasibility(sol['w'],cand_i,j,d):
                                     tw_new = [jobs[j]['tw_start'],jobs[j]['tw_due']]       
-                                    #if there are other jobs assigned to the nurse on the day job should be done:       
+                                    # if there are other jobs assigned to the nurse on the day job should be done:       
                                     tw_feasible=True
                                     for tw_exist in sol['w'][cand_i,d]:
                                         # if there is an overlap in candidate nurse's schedule on day d, skip to next nurse
@@ -529,28 +554,21 @@ def greedy_algorithm(sol,nurses,time_limit):
     start = timer()
     current = 0
     obj=calculate_obj(sol)
-    
+    step=0
+    obj_list=[obj]
+    nurse_list=[len(nurses)]
     # create a neighbour for initial solution
     new_sol = generate_neighbour(sol) 
     # compare objective functions for initial solution
     new_obj = calculate_obj(new_sol)
 
-    step=0
-    obj_list=[]
-    nurse_list=[]
-    while new_obj<obj:
+    while new_obj<=obj:
         # if the new solution is better than the previous solution (minimization)
         obj = new_obj
         obj_list.append(obj)
-        
-        # create a neighbour
-        new_sol = generate_neighbour(sol) 
-        
-        # compare objective functions
-        new_obj = calculate_obj(new_sol)
-        num_nurses = calculate_number_of_nurses(sol)
+        num_nurses = calculate_number_of_nurses(new_sol)
         nurse_list.append(num_nurses)
-        obj_list.append(obj)
+
         #keep track of number of steps in case of comparison with SA
         current = timer()
         # bored of waiting ? (not necessary)
@@ -558,6 +576,12 @@ def greedy_algorithm(sol,nurses,time_limit):
             print("Time limit is reached!")
             break
         else:
+            # create a neighbour
+            new_sol = generate_neighbour(sol) 
+            
+            # compare objective functions
+            new_obj = calculate_obj(new_sol)
+            
             step+=1   
             
     #some plots:
@@ -574,7 +598,7 @@ def greedy_algorithm(sol,nurses,time_limit):
     
     return new_sol, obj_list
 
-def find_temperature(sol,nurses,num):
+def find_temperature(sol,nurses,num,acceptProb):
     global search_previous
     summ=0
     new_sol={}
@@ -582,20 +606,21 @@ def find_temperature(sol,nurses,num):
     for i in range(num):  
         new_sol = generate_neighbour(sol) 
         new_obj = calculate_obj(new_sol) 
-        summ += new_obj-obj
+        summ += abs(new_obj-obj)
 
-    return summ/num
+    return (summ/num) / math.log(1/acceptProb)
 
-def SA_algorithm(sol,nurses, step_max, time_limit):
+def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
+    global initial_temperature
     start = timer()
-    
+    count=0
     step=0
-    obj_list=[]
-    nurse_list=[]
     obj=calculate_obj(sol)
+    obj_list=[obj]
+    nurse_list=[len(nurses)]
     while step<step_max:
         # define the temperature (can be logartihmic, too)
-        T=1-step/step_max
+        T=initial_temperature*(0.99**step)
         
         # create a neighbour
         new_sol = generate_neighbour(sol) 
@@ -623,8 +648,17 @@ def SA_algorithm(sol,nurses, step_max, time_limit):
         obj_list.append(obj)
         
         current = timer()
-        # bored of waiting ? (not necessary)
-        if current-start > time_limit:
+        
+        # bored of waiting ?
+        if len(obj_list)>100 and obj == obj_list[-2]:
+            count+=1
+        else:
+            count=0
+            
+        if count==stagnation:
+            print("Stagnation: No more improvement for last",int(stagnation),"steps!")
+            break 
+        elif current-start > time_limit:
             print("Time limit is reached!")
             break
         else:
@@ -661,7 +695,7 @@ clients = sets['clients']
 search_previous=len(jobs)*len(days)
 
 # number of steps to be taken by SA
-step_max=1
+step_max=5000
 
 #time limit to stop the algorithm (in seconds), no need to change atm
 time_limit=600
@@ -669,11 +703,17 @@ time_limit=600
 # probability that governs neighbour generating rule: 
 # prob1: closer to 1 more changes the number of nurses, less binary switches
 # prob1: closer to 0 more binary switches, less changes in the number of nurses
-prob1=0
+prob1=0.01
 
 # prob2: closer to 0 more decrements than increments in number of nurses 
 # prob2: closer to 1 more increments than decrements in number of nurses 
-prob2=0
+prob2=0.5
+
+# initial probability for simulated annealing algorithm transition
+prob_init=0.95
+
+# If there is no improvment in last #stagnation steps, terminate the algorithm
+stagnation=step_max/5
 
 # objective function: 
 # "total": minimize the total number of nurses seen by clients
@@ -684,52 +724,51 @@ objective = "total"
 # Run algorithms:
 # =============================================================================
 
-"""
-start = timer()
-sol,nurses = generate_initial_solution(search_previous)
-obj=calculate_obj(sol)
-avg_over=20000
-print(find_temperature(sol,nurses,avg_over))
-#approximately 3
-
 #algorihtms 
-
-#bug
-print("\n-----GREEDY ALGORITHM-----")
-final_sol, obj_list = greedy_algorithm(sol,nurses,time_limit)
-print("Number of nurses found by greedy algorithm : ", len(nurses))
-#print(final_sol)
-#check feasilbility of the final solution (not complete)
-print("Objective falue for ", objective,"number of nurses seen: ", obj_list[-1])
-print("Check feasibility of greedy algorithm:", check_all_jobs_assigned(nurses,final_sol))
-"""
-
-
 print("-----HEURISTIC-----")
 start = timer()
 sol,nurses = generate_initial_solution(search_previous)
 obj=calculate_obj(sol)
-#print(sol['w'])
 
-        
-#print(sol)
+# number of nurses needed approximately: 
+print("Approximate number of nurses needed by heuristic: ", len(nurses))
 print("Computation time:",timer()-start,"seconds")
 #print(sol)
 print("Initial objective value : ",obj)
 print("Check feasibility:",check_final_feasibility(nurses,sol))
 
-# number of nurses needed approximately: 
-print("Approximate number of nurses needed by heuristic: ", len(nurses))
+
+print("\n-----GREEDY ALGORITHM-----")
+
+start = timer()
+sol,nurses = generate_initial_solution(search_previous)
+obj=calculate_obj(sol)
+
+final_sol, obj_list = greedy_algorithm(sol,nurses,time_limit)
+print("Number of nurses found by greedy algorithm : ", len(nurses))
+#print(final_sol)
+
+print("Objective falue for ", objective,"number of nurses seen: ", obj_list[-1])
+print("Check feasibility of the final solution:", check_final_feasibility(nurses,final_sol))
+
+
 
 print("\n-----SIMULATED ANNEALING ALGORITHM-----")
+start = timer()
+sol,nurses = generate_initial_solution(search_previous)
+obj=calculate_obj(sol)
 
-final_sol, obj_list = SA_algorithm(sol,nurses, step_max, time_limit)
+avg_over=step_max
+initial_temperature = find_temperature(sol,nurses,avg_over,prob_init)
+#print(initial_temperature)
+
+final_sol, obj_list = SA_algorithm(sol,nurses, step_max, time_limit,stagnation)
 print("Number of nurses found by simulated annealing algorithm : ", len(nurses))
 #print(final_sol)
 
 #check feasilbility of the final solution (not complete)
 print("Objective value for ", objective,"number of nurses seen: ", obj_list[-1])
-print("Check feasibility:",check_final_feasibility(nurses,final_sol))
+print("Check feasibility of the final solution:",check_final_feasibility(nurses,final_sol))
 
 
 
