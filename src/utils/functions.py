@@ -631,7 +631,6 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
         if new_obj<obj:
             obj=new_obj
         
-
         # if the new solution is worse than the previous solution (minimization)
         else:
             # normalization to make sure that the probability is between 0 and 1
@@ -641,7 +640,9 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
             if prob > random.uniform(0, 1):    
                 obj=new_obj
 
-        nurse_list.append(len(nurses))
+
+        nurse_num=len(nurses)
+        nurse_list.append(nurse_num)
         obj_list.append(obj)
         
         current = timer()
@@ -692,7 +693,7 @@ clients = sets['clients']
 search_previous=len(jobs)*len(days)
 
 # number of steps to be taken by SA
-step_max=300
+step_max=2000
 
 #time limit to stop the algorithm (in seconds), no need to change atm
 time_limit=600
@@ -700,7 +701,7 @@ time_limit=600
 # probability that governs neighbour generating rule: 
 # prob1: closer to 1 more changes the number of nurses, less binary switches
 # prob1: closer to 0 more binary switches, less changes in the number of nurses
-prob1=0.5
+prob1=0.1
 
 
 # prob2: closer to 0 more decrements than increments in number of nurses 
@@ -708,7 +709,7 @@ prob1=0.5
 prob2=0.1
 
 # initial probability for simulated annealing algorithm transition
-prob_init=0.5
+prob_init=0.95
 
 # If there is no improvement in last #stagnation steps, terminate the algorithm
 stagnation=step_max/5
