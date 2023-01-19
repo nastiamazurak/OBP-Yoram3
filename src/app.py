@@ -14,7 +14,7 @@ app.layout = html.Div(
             [
                 dbc.Col(),
                 dbc.Col(
-                    [html.H1("Client-centered care")],
+                    [html.H1("Client-centered care-EDA")],
                     width=9,
                 ),
             ]
