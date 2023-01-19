@@ -562,7 +562,7 @@ def greedy_algorithm(sol,nurses,time_limit):
     # compare objective functions for initial solution
     new_obj = calculate_obj(new_sol)
 
-    while new_obj<obj:
+    while new_obj<=obj:
         # if the new solution is better than the previous solution (minimization)
         obj = new_obj
         obj_list.append(obj)
@@ -618,8 +618,8 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
     nurse_list=[len(nurses)]
     while step<step_max:
         # define the temperature (can be logartihmic, too)
-        T=initial_temperature*(0.95**step)
-        
+        T=initial_temperature*(1**step)
+        # T = 1-step/step_max
         # create a neighbour
         new_sol = generate_neighbour(sol,nurses) 
         
@@ -628,15 +628,16 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
         new_obj = calculate_obj(new_sol)
         
         # if the new solution is better than the previous solution (minimization)
-        if new_obj<obj:
+        if new_obj<=obj:
             obj=new_obj
         
         # if the new solution is worse than the previous solution (minimization)
         else:
             # normalization to make sure that the probability is between 0 and 1
             prob = math.exp(-(new_obj-obj)/T)
+            prob =1-(step/step_max)*math.exp(-(new_obj-obj)/T)
             # accept the worse solution:
-            # print(prob)
+            print(prob)
             if prob > random.uniform(0, 1):    
                 obj=new_obj
 
@@ -693,7 +694,7 @@ clients = sets['clients']
 search_previous=len(jobs)*len(days)
 
 # number of steps to be taken by SA
-step_max=2000
+step_max=1000
 
 #time limit to stop the algorithm (in seconds), no need to change atm
 time_limit=600
@@ -701,12 +702,12 @@ time_limit=600
 # probability that governs neighbour generating rule: 
 # prob1: closer to 1 more changes the number of nurses, less binary switches
 # prob1: closer to 0 more binary switches, less changes in the number of nurses
-prob1=0.1
+prob1=1
 
 
 # prob2: closer to 0 more decrements than increments in number of nurses 
 # prob2: closer to 1 more increments than decrements in number of nurses 
-prob2=0.1
+prob2=0.005
 
 # initial probability for simulated annealing algorithm transition
 prob_init=0.95
@@ -746,10 +747,10 @@ sol,nurses = generate_initial_solution(search_previous)
 obj=calculate_obj(sol)
 
 final_sol, obj_list = greedy_algorithm(sol,nurses,time_limit)
-print("Number of nurses found by greedy algorithm : ", len(nurses))
+print("Number of nurses found by greedy algorithm: ", len(nurses))
 #print(final_sol)
 
-print("Objective falue for ", objective,"number of nurses seen: ", obj_list[-1])
+print("Objective falue for", objective,"number of nurses seen: ", obj_list[-1])
 print("Check feasibility of the final solution:", check_final_feasibility(nurses,final_sol))
 
 
@@ -768,11 +769,11 @@ elif objective == "minmax":
 start = timer()
 sol,nurses = generate_initial_solution(search_previous)
 final_sol, obj_list = SA_algorithm(sol,nurses, step_max, time_limit,stagnation)
-print("Number of nurses found by simulated annealing algorithm : ", len(nurses))
+print("Number of nurses found by simulated annealing algorithm: ", len(nurses))
 #print(final_sol)
 
 #check feasilbility of the final solution (not complete)
-print("Objective value for ", objective,"number of nurses seen: ", obj_list[-1])
+print("Objective value for",objective,"number of nurses seen:", obj_list[-1])
 print("Check feasibility of the final solution:",check_final_feasibility(nurses,final_sol))
 
 
