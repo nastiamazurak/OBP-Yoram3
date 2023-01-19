@@ -566,8 +566,7 @@ def greedy_algorithm(sol,nurses,time_limit):
         # if the new solution is better than the previous solution (minimization)
         obj = new_obj
         obj_list.append(obj)
-        num_nurses = calculate_number_of_nurses(new_sol)
-        nurse_list.append(num_nurses)
+        nurse_list.append(len(nurses))
 
         #keep track of number of steps in case of comparison with SA
         current = timer()
@@ -642,8 +641,7 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
             if prob > random.uniform(0, 1):    
                 obj=new_obj
 
-        num_nurses = calculate_number_of_nurses(new_sol)
-        nurse_list.append(num_nurses)
+        nurse_list.append(len(nurses))
         obj_list.append(obj)
         
         current = timer()
@@ -694,7 +692,7 @@ clients = sets['clients']
 search_previous=len(jobs)*len(days)
 
 # number of steps to be taken by SA
-step_max=1000
+step_max=300
 
 #time limit to stop the algorithm (in seconds), no need to change atm
 time_limit=600
@@ -707,12 +705,12 @@ prob1=0.5
 
 # prob2: closer to 0 more decrements than increments in number of nurses 
 # prob2: closer to 1 more increments than decrements in number of nurses 
-prob2=0.5
+prob2=0.1
 
 # initial probability for simulated annealing algorithm transition
 prob_init=0.5
 
-# If there is no improvment in last #stagnation steps, terminate the algorithm
+# If there is no improvement in last #stagnation steps, terminate the algorithm
 stagnation=step_max/5
 
 # objective function: 
