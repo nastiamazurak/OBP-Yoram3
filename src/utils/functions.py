@@ -57,8 +57,8 @@ def calculate_obj(sol):
                                 count+=1    
                                 break
                                 # Break the inner loop..., no need to search more jobs/days
-            if assigned_to_i:
-                break   
+                if assigned_to_i:
+                    break    
         total+=count
         if count > minmax:
             minmax = count
@@ -427,15 +427,13 @@ def first_scenario(sol,cand_i,cand_j,cand_d):
         #cannot find any bit to do binary switch, don't switch
         return cand_i,cand_j,cand_d
 
-def second_scenario(sol,cand_i,cand_j_list,cand_d_list):
+def second_scenario(sol,nurses,cand_i,cand_j_list,cand_d_list):
     new_i_list=[]
     need_nurse=False
     for index in range(len(cand_j_list)):
         cand_j = cand_j_list[index]
         cand_d = cand_d_list[index]
-        
         nurse_candidates=[]
-        
         # this nurse should not have jobs more than 5 days:
         # this nurse should not have another job started 8 hours ago or will start 8 hours later that day.
         for i in nurses:
@@ -453,6 +451,8 @@ def second_scenario(sol,cand_i,cand_j_list,cand_d_list):
                             nurse_candidates.append(i)    
                 else:
                     nurse_candidates.append(i)
+            else: 
+                need_nurse=True
                 
         # We checked all feasibility constraints, let's finally choose one nurse candidate:
         if nurse_candidates:
@@ -466,9 +466,9 @@ def second_scenario(sol,cand_i,cand_j_list,cand_d_list):
     if need_nurse:
         nurses.append(cand_i)
         
-    return new_i_list
+    return new_i_list,nurses
                
-def generate_neighbour(sol):    
+def generate_neighbour(sol,nurses):    
     global prob1
     global prob2
     # TWO SCENARIOS (MY HYPOTHESIS...), for now let's skip the second one (a bit complex...)
@@ -521,7 +521,7 @@ def generate_neighbour(sol):
             # assign all these jobs to other nurses:
     
             # choose another nurse, do feasibility check:
-            new_i_list = second_scenario(sol,cand_i,cand_j_list,cand_d_list)
+            new_i_list,nurses = second_scenario(sol,nurses,cand_i,cand_j_list,cand_d_list)
     
             # do nurse elimination and switches:
             for ind in range(len(new_i_list)):   
@@ -558,11 +558,11 @@ def greedy_algorithm(sol,nurses,time_limit):
     obj_list=[obj]
     nurse_list=[len(nurses)]
     # create a neighbour for initial solution
-    new_sol = generate_neighbour(sol) 
+    new_sol = generate_neighbour(sol,nurses) 
     # compare objective functions for initial solution
     new_obj = calculate_obj(new_sol)
 
-    while new_obj<=obj:
+    while new_obj<obj:
         # if the new solution is better than the previous solution (minimization)
         obj = new_obj
         obj_list.append(obj)
@@ -577,7 +577,7 @@ def greedy_algorithm(sol,nurses,time_limit):
             break
         else:
             # create a neighbour
-            new_sol = generate_neighbour(sol) 
+            new_sol = generate_neighbour(sol,nurses) 
             
             # compare objective functions
             new_obj = calculate_obj(new_sol)
@@ -598,16 +598,15 @@ def greedy_algorithm(sol,nurses,time_limit):
     
     return new_sol, obj_list
 
-def find_temperature(sol,nurses,num,acceptProb):
+def find_temperature(num,acceptProb):
     global search_previous
     summ=0
-    new_sol={}
-    new_obj=0
     for i in range(num):  
-        new_sol = generate_neighbour(sol) 
+        sol,nurses = generate_initial_solution(search_previous)
+        obj=calculate_obj(sol)
+        new_sol = generate_neighbour(sol,nurses) 
         new_obj = calculate_obj(new_sol) 
         summ += abs(new_obj-obj)
-
     return (summ/num) / math.log(1/acceptProb)
 
 def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
@@ -620,17 +619,17 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
     nurse_list=[len(nurses)]
     while step<step_max:
         # define the temperature (can be logartihmic, too)
-        T=initial_temperature*(0.99**step)
+        T=initial_temperature*(0.95**step)
         
         # create a neighbour
-        new_sol = generate_neighbour(sol) 
+        new_sol = generate_neighbour(sol,nurses) 
         
         # compare objective functions
         
         new_obj = calculate_obj(new_sol)
         
         # if the new solution is better than the previous solution (minimization)
-        if new_obj<=obj:
+        if new_obj<obj:
             obj=new_obj
         
 
@@ -643,14 +642,14 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
             if prob > random.uniform(0, 1):    
                 obj=new_obj
 
-        num_nurses = calculate_number_of_nurses(sol)
+        num_nurses = calculate_number_of_nurses(new_sol)
         nurse_list.append(num_nurses)
         obj_list.append(obj)
         
         current = timer()
         
         # bored of waiting ?
-        if len(obj_list)>100 and obj == obj_list[-2]:
+        if len(obj_list)>stagnation and obj == obj_list[-2]:
             count+=1
         else:
             count=0
@@ -695,7 +694,7 @@ clients = sets['clients']
 search_previous=len(jobs)*len(days)
 
 # number of steps to be taken by SA
-step_max=5000
+step_max=1000
 
 #time limit to stop the algorithm (in seconds), no need to change atm
 time_limit=600
@@ -703,14 +702,15 @@ time_limit=600
 # probability that governs neighbour generating rule: 
 # prob1: closer to 1 more changes the number of nurses, less binary switches
 # prob1: closer to 0 more binary switches, less changes in the number of nurses
-prob1=0.01
+prob1=0.5
+
 
 # prob2: closer to 0 more decrements than increments in number of nurses 
 # prob2: closer to 1 more increments than decrements in number of nurses 
 prob2=0.5
 
 # initial probability for simulated annealing algorithm transition
-prob_init=0.95
+prob_init=0.5
 
 # If there is no improvment in last #stagnation steps, terminate the algorithm
 stagnation=step_max/5
@@ -725,6 +725,7 @@ objective = "total"
 # =============================================================================
 
 #algorihtms 
+
 print("-----HEURISTIC-----")
 start = timer()
 sol,nurses = generate_initial_solution(search_previous)
@@ -736,6 +737,7 @@ print("Computation time:",timer()-start,"seconds")
 #print(sol)
 print("Initial objective value : ",obj)
 print("Check feasibility:",check_final_feasibility(nurses,sol))
+
 
 
 print("\n-----GREEDY ALGORITHM-----")
@@ -754,14 +756,18 @@ print("Check feasibility of the final solution:", check_final_feasibility(nurses
 
 
 print("\n-----SIMULATED ANNEALING ALGORITHM-----")
-start = timer()
-sol,nurses = generate_initial_solution(search_previous)
-obj=calculate_obj(sol)
 
-avg_over=step_max
-initial_temperature = find_temperature(sol,nurses,avg_over,prob_init)
+#avg_over=10000
+#initial_temperature = find_temperature(avg_over,prob_init)
 #print(initial_temperature)
 
+if objective == "total":    
+    initial_temperature=4.2 # :for total, found above, no need to run it again
+elif objective == "minmax":
+    initial_temperature=0.9 # :for minmax, found above, no need to run it again
+    
+start = timer()
+sol,nurses = generate_initial_solution(search_previous)
 final_sol, obj_list = SA_algorithm(sol,nurses, step_max, time_limit,stagnation)
 print("Number of nurses found by simulated annealing algorithm : ", len(nurses))
 #print(final_sol)
