@@ -402,7 +402,9 @@ def first_scenario(sol,cand_i,cand_j,cand_d,cand_c):
     new_i=None
     new_job = None
     new_day = None
-    
+    cand_i_list=[]
+    cand_j_list=[]
+    cand_d_list=[]
     if found_one_seen_before:
         for i in seen_before:
             # find a job that the candidate nurse was previously assigned to:
@@ -424,21 +426,16 @@ def first_scenario(sol,cand_i,cand_j,cand_d,cand_c):
                                                 tw_feasible=False
                                                 break
                                         if tw_feasible: 
-                                            found_one = True   
-                                            new_i=i
-                                            new_job = j
-                                            new_day = d
+                                            found_one = True  
+                                            cand_i_list.append(i)
+                                            cand_j_list.append(j)
+                                            cand_d_list.append(d)
                                 else:
                                     found_one=True
-                                    new_i=i
-                                    new_job = j
-                                    new_day = d                              
-                    if found_one:
-                        break
-                if found_one:
-                    break
-            if found_one:
-                break
+                                    cand_i_list.append(i)
+                                    cand_j_list.append(j)
+                                    cand_d_list.append(d)                     
+
     elif not found_one_seen_before or not found_one:
         for i in nurse_candidates:
             # find a job that the candidate nurse was previously assigned to:
@@ -461,21 +458,20 @@ def first_scenario(sol,cand_i,cand_j,cand_d,cand_c):
                                                 break
                                         if tw_feasible: 
                                             found_one = True   
-                                            new_i=i
-                                            new_job = j
-                                            new_day = d
+                                            cand_i_list.append(i)
+                                            cand_j_list.append(j)
+                                            cand_d_list.append(d)
                                 else:
                                     found_one=True
-                                    new_i=i
-                                    new_job = j
-                                    new_day = d                              
-                    if found_one:
-                        break
-                if found_one:
-                    break
-            if found_one:
-                break   
-    if found_one:
+                                    cand_i_list.append(i)
+                                    cand_j_list.append(j)
+                                    cand_d_list.append(d)                                  
+
+    if found_one: 
+        new_i = random.choice(cand_i_list)
+        index = cand_i_list.index(new_i)
+        new_job = cand_j_list[index]
+        new_day = cand_d_list[index]
         return new_i,new_job,new_day
     else:
         #cannot find any bit to do binary switch, don't switch
@@ -563,6 +559,7 @@ def second_scenario(sol,nurses,cand_i,cand_j_list,cand_d_list):
         cand_j = cand_j_list[index]
         cand_d = cand_d_list[index]
         nurse_candidates=[]
+        found_one=False
         # this nurse should not have jobs more than 5 days:
         # this nurse should not have another job started 8 hours ago or will start 8 hours later that day.
         for i in nurses:
@@ -577,24 +574,21 @@ def second_scenario(sol,nurses,cand_i,cand_j_list,cand_d_list):
                                 tw_feasible=False
                                 break
                         if tw_feasible:
+                            found_one=True
                             nurse_candidates.append(i)    
                 else:
+                    found_one=True
                     nurse_candidates.append(i)
-            else: 
-                need_nurse=True
-                
         # We checked all feasibility constraints, let's finally choose one nurse candidate:
-        if nurse_candidates:
-            new_i = random.choice(nurse_candidates)    
+        if found_one:
+            new_i = random.choice(nurse_candidates)  
             new_i_list.append(new_i)
         # If no candidate left, add nurse again:
         else:
-            new_i_list.append(cand_i)
             need_nurse=True
-            
+            new_i_list.append(cand_i)
     if need_nurse:
         nurses.append(cand_i)
-        
     return new_i_list,nurses
                
 def generate_neighbour(sol,nurses,prob1,prob2):    
@@ -646,6 +640,7 @@ def generate_neighbour(sol,nurses,prob1,prob2):
                         if sol['z'][j,d]==cand_i:
                             cand_j_list.append(j)
                             cand_d_list.append(d)
+                        
             # remove nurse:
             nurses.remove(cand_i)
             # assign all these jobs to other nurses:
@@ -749,6 +744,7 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
     obj=calculate_obj(sol)
     obj_list=[obj]
     nurse_list=[len(nurses)]
+    minimum_nurse=False
     while step<step_max:
         # define the temperature (can be logartihmic, too)
         T=initial_temperature*(1**step)
@@ -768,7 +764,7 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
         # if the new solution is worse than the previous solution (minimization)
         else:
             # normalization to make sure that the probability is between 0 and 1
-            # prob = math.exp(-(new_obj-obj)/T)
+            prob = math.exp(-(new_obj-obj)/T)
             prob =1-(step/step_max)*math.exp(-(new_obj-obj)/T)
             # accept the worse solution:
             print(prob)
@@ -782,26 +778,19 @@ def SA_algorithm(sol,nurses, step_max, time_limit,stagnation):
         
         current = timer()
         
-        dec_prob1=0
-        inc_prob2=0
-        init_prob1=1
-        init_prob2=0
-        if step < step_max/5:
-            prob1=init_prob1
-            prob2=init_prob2
-        elif step < 2*step_max/5:
-            prob1=init_prob1-dec_prob1*2
-            prob2=init_prob2+inc_prob2*2
-        elif step < 3*step_max/5:
-            prob1=init_prob1-dec_prob1*3
-            prob2=init_prob2+inc_prob2*3
-        elif step < 4*step_max/5:
-            prob1=init_prob1-dec_prob1*4
-            prob2=init_prob2+inc_prob2*4
-        elif step < step_max:
-            prob1=init_prob1-dec_prob1*5
-            prob2=init_prob2+inc_prob2*5
-        # bored of waiting ?
+        # decrease number of nurses until reaching minimum number of nurses
+        if nurse_num < nurse_list[-2] and not minimum_nurse:
+            prob1=1
+            prob2=0
+        else:
+            minimum_nurse=True
+            
+        # then do switch
+        if minimum_nurse:
+            prob1=0.2
+            prob2=0.2
+
+        # convergence
         if len(obj_list)>stagnation and obj == obj_list[-2]:
             count+=1
         else:
@@ -847,7 +836,7 @@ clients = sets['clients']
 search_previous=len(jobs)*len(days)
 
 # number of steps to be taken by SA
-step_max=2000
+step_max=10000
 
 #time limit to stop the algorithm (in seconds), no need to change atm
 time_limit=600
@@ -866,12 +855,12 @@ prob2=0.1
 prob_init=0.95
 
 # If there is no improvement in last #stagnation steps, terminate the algorithm
-stagnation=step_max/5
+stagnation=step_max/1
 
 # objective function: 
 # "total": minimize the total number of nurses seen by clients
 # "minmax": minimize the max number of nurses seen by clients
-objective = "total"
+objective = "minmax"
 
 # method for finding the initial solution: 
 # "worst": the worst solution 
