@@ -17,7 +17,7 @@ import pandas as pd
 import numpy as np
 
 # local imports
-from utils.helpers import save_file
+from utils import helpers as hp
 
 
 SIDEBAR_STYLE = {
@@ -53,7 +53,7 @@ sidebar = html.Div(
                 html.P("Provide number of nurses:", className="lead"),
                 html.Div(id="suggested-nurses"),
                 dcc.Input(
-                    id="nurses",
+                    id="input-nurses",
                     type="number",
                     placeholder="Enter a number",
                     style={
@@ -75,37 +75,18 @@ sidebar = html.Div(
 )
 
 
-def parse_contents(contents, filename, date):
-    content_type, content_string = contents.split(",")
-
-    decoded = base64.b64decode(content_string)
-    save_file(filename, decoded)
-    return html.Div([html.H5(filename)])
-
-
 @callback(
     Output("output-datatable-info", "children"),
     Input("upload-data", "contents"),
     State("upload-data", "filename"),
-    State("upload-data", "last_modified"),
 )
-
-# Rename passing variables
-def update_output(list_of_contents, list_of_names, list_of_dates):
-    if list_of_contents is not None:
-        children = [parse_contents(list_of_contents, list_of_names, list_of_dates)]
-        return children
-
-
-# ## Figure out how to pass df and call function from utils
-@callback(Output("suggested-nurses", "children"))
-def suggest_nurses():
-    from utils.functions import intial_nurse_number
-
-    nurses = intial_nurse_number()
-    return nurses
+def update_output(contents, filename):
+    content_string = contents.split(",")[1]
+    decoded = base64.b64decode(content_string)
+    hp.save_file(filename, decoded)
+    return html.Div([html.H5(filename)])
 
 
-#     # call function to calculate # of nurses
-#     #
-#     return html.Div([html.H6("Suggested number of nurses: ")])
+# @callback(Output("suggested-nurses", "children"), Input("upload-data", "filename"))
+# def update_output_nurses(filename):
+#     return hp.get_suggested_number_of_nurses(filename)
