@@ -906,12 +906,12 @@ start = timer()
 number_of_nurses=25
 sol,nurses = heuristic(number_of_nurses,search_previous)
 obj=calculate_obj(sol)
-
+sol_heuristic,nurses_heuristic= generate_initial_solution(init_method,search_previous)
 # number of nurses needed approximately: 
-print("Approximate number of nurses needed by heuristic: ", len(nurses))
+print("Approximate number of nurses needed by heuristic: ", len(nurses_heuristic))
 print("Computation time:",timer()-start,"seconds")
 #print(sol)
-print("Initial objective value : ",obj)
+print("Initial objective value for", number_of_nurses, "nurses : ",obj, )
 print("Check feasibility:",check_final_feasibility(nurses,sol))
 
 
