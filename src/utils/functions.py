@@ -246,12 +246,12 @@ def find_w(nurses,z):
             for j in jobs:
                 if jobs[j][d] == 1:
                     if z[j,d] == i:
-                        w[i,d].append([jobs[j]['tw_start'],jobs[j]['tw_due']])
+                        w[i,d].append([jobs[j]['tw_start'],jobs[j]['tw_start'] + jobs[j]['duration']])
     return w            
 
 # function needed for assignment:
 def assign_to_other_nurses(search_previous,number_nurses,nurses,w_init,z_init,j,d):
-    tw_new = [jobs[j]['tw_start'],jobs[j]['tw_due']]
+    tw_new = [jobs[j]['tw_start'],jobs[j]['tw_start'] + jobs[j]['duration']]
     found_one = False
     found=None
     # if there are other nurses to check:
@@ -349,7 +349,7 @@ def generate_initial_solution(init_method,search_previous):
                     #if 5 days feasibility is satisfied
                     if feasible:
                         # the time window of the job
-                        tw_new = [jobs[j]['tw_start'],jobs[j]['tw_due']]
+                        tw_new = [jobs[j]['tw_start'], jobs[j]['tw_start'] + jobs[j]['duration']]
                         #if there are other jobs assigned to the nurse on the day job should be done:
                         if w_init[number_nurses,d]: 
                             # check if adding a new job causes 8-hours infeasibility:
@@ -410,7 +410,7 @@ def first_scenario(sol,nurses,cand_i,cand_j,cand_d,cand_c):
         if check_five_days_feasibility(sol['w'],i,cand_d):
             if sol['w'][i,cand_d]:
                 if check_eight_hours_feasibility(sol['w'],i,cand_j,cand_d):
-                    tw_new = [jobs[cand_j]['tw_start'],jobs[cand_j]['tw_due']]       
+                    tw_new = [jobs[cand_j]['tw_start'],jobs[cand_j]['tw_start'] + jobs[cand_j]['duration']]
                     # if there are other jobs assigned to the nurse on the day job should be done:       
                     tw_feasible=True
                     for tw_exist in sol['w'][i,cand_d]:
@@ -449,7 +449,7 @@ def first_scenario(sol,nurses,cand_i,cand_j,cand_d,cand_c):
                             if check_five_days_feasibility(sol['w'],cand_i,d):
                                 if sol['w'][cand_i,d]: 
                                     if check_eight_hours_feasibility(sol['w'],cand_i,j,d):
-                                        tw_new = [jobs[j]['tw_start'],jobs[j]['tw_due']]       
+                                        tw_new = [jobs[j]['tw_start'],jobs[j]['tw_start'] + jobs[j]['duration']]
                                         # if there are other jobs assigned to the nurse on the day job should be done:       
                                         tw_feasible=True
                                         for tw_exist in sol['w'][cand_i,d]:
@@ -480,7 +480,7 @@ def first_scenario(sol,nurses,cand_i,cand_j,cand_d,cand_c):
                             if check_five_days_feasibility(sol['w'],cand_i,d):
                                 if sol['w'][cand_i,d]: 
                                     if check_eight_hours_feasibility(sol['w'],cand_i,j,d):
-                                        tw_new = [jobs[j]['tw_start'],jobs[j]['tw_due']]       
+                                        tw_new = [jobs[j]['tw_start'],jobs[j]['tw_start'] + jobs[j]['duration']]
                                         # if there are other jobs assigned to the nurse on the day job should be done:       
                                         tw_feasible=True
                                         for tw_exist in sol['w'][cand_i,d]:
@@ -599,7 +599,7 @@ def second_scenario(sol,nurses,cand_i,cand_j_list,cand_d_list):
             if check_five_days_feasibility(sol['w'],i,cand_d):
                 if sol['w'][i,cand_d]:
                     if check_eight_hours_feasibility(sol['w'],i,cand_j,cand_d):
-                        tw_new = [jobs[cand_j]['tw_start'],jobs[cand_j]['tw_due']]     
+                        tw_new = [jobs[cand_j]['tw_start'],jobs[cand_j]['tw_start'] + jobs[cand_j]['duration']]
                         for tw_exist in sol['w'][i,cand_d]:   
                             tw_feasible=True
                             feasible = check_overlap(tw_exist,tw_new)
@@ -903,16 +903,17 @@ init_method="heuristic"
 
 print("-----HEURISTIC-----")
 start = timer()
-number_of_nurses=25
+number_of_nurses=9
 sol,nurses = heuristic(number_of_nurses,search_previous)
 obj=calculate_obj(sol)
 sol_heuristic,nurses_heuristic= generate_initial_solution(init_method,search_previous)
+obj_heuristic=calculate_obj(sol_heuristic)
 # number of nurses needed approximately: 
 print("Approximate number of nurses needed by heuristic: ", len(nurses_heuristic))
 print("Computation time:",timer()-start,"seconds")
 #print(sol)
-print("Initial objective value for", number_of_nurses, "nurses : ",obj, )
-print("Check feasibility:",check_final_feasibility(nurses,sol))
+print("Initial objective value for", number_of_nurses, "nurses : ",obj_heuristic, )
+print("Check feasibility:",check_final_feasibility(nurses_heuristic,sol_heuristic))
 
 
 """
