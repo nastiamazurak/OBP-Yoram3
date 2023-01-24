@@ -38,7 +38,7 @@ import matplotlib.pyplot as plt
 # This section includes the functions that run the algorithm
 # =============================================================================
 
-def calculate_obj(sol):
+def calculate_obj(sol,nurses):
     global objective
     #Two options of objective as parameter: "total" or "minmax"
     minmax = 0
@@ -903,18 +903,18 @@ init_method="heuristic"
 
 print("-----HEURISTIC-----")
 start = timer()
-number_of_nurses=9
-sol,nurses = heuristic(number_of_nurses,search_previous)
-obj=calculate_obj(sol)
-sol_heuristic,nurses_heuristic= generate_initial_solution(init_method,search_previous)
-obj_heuristic=calculate_obj(sol_heuristic)
+number_of_nurses=15
+sol_heuristic,nurses_heuristic = heuristic(number_of_nurses,search_previous)
+obj_heuristic=calculate_obj(sol_heuristic,nurses_heuristic)
+sol_approx,nurses_approx= generate_initial_solution(init_method,search_previous)
+obj_approx=calculate_obj(sol_approx,nurses_approx)
 # number of nurses needed approximately: 
-print("Approximate number of nurses needed by heuristic: ", len(nurses_heuristic))
+print("Approximate number of nurses needed by heuristic: ", len(nurses_approx))
 print("Computation time:",timer()-start,"seconds")
 #print(sol)
-print("Initial objective value for", number_of_nurses, "nurses : ",obj_heuristic, )
+print("Initial objective value for", len(nurses_heuristic), "nurses : ",obj_heuristic, )
 print("Check feasibility:",check_final_feasibility(nurses_heuristic,sol_heuristic))
-
+print(nurses_heuristic)
 
 """
 print("\n-----GREEDY ALGORITHM-----")
