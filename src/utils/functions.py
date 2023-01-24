@@ -141,7 +141,7 @@ def check_enough_nurse(number,search_previous,stop_step=5000,stop_time=10):
             return found
         else:
             while cont:
-                sol,nurses = generate_neighbour(sol,nurses,prob1,prob2) 
+                sol,nurses = generate_neighbour(sol,nurses,prob1,prob2)
                 if number == len(nurses):
                     cont=False
                     found=True
@@ -153,6 +153,7 @@ def check_enough_nurse(number,search_previous,stop_step=5000,stop_time=10):
         num_steps=0
         while cont:
             sol,nurses = generate_neighbour(sol,nurses,prob1,prob2)
+            print(nurses)
             current=timer()
             if number == len(nurses):
                 cont=False
@@ -656,10 +657,10 @@ def generate_neighbour(sol,nurses,prob1,prob2):
         # do binary switch between matches:
         sol['z'][cand_j,cand_d] = new_i
         sol['z'][new_j,new_d] = cand_i
-        
+        sol['w'] = find_w(nurses, sol['z'])
 
     # 2) INCREASE/DECREASE THE NUMBER OF NURSES BY ONE 
-    else:           
+    else:
         if random.uniform(0, 1) > prob2:    
             #choose one nurse:
             cand_i = random.choice(nurses)
@@ -684,16 +685,37 @@ def generate_neighbour(sol,nurses,prob1,prob2):
             # do nurse elimination and switches:
             for ind in range(len(new_i_list)):   
                 sol['z'][cand_j_list[ind],cand_d_list[ind]] = new_i_list[ind]
+            sol['w'] = find_w(nurses, sol['z'])
         elif len(nurses)<len(jobs)*len(days):
             # add new nurse
             new_nurse=max(nurses)+1
+            for d in days:
+                sol['w'][new_nurse, d] = []
+
+            found_one = False
+            for i in nurses:
+                for (j,d),nurse in sol['z'].items():
+                    if i == nurse:
+                        tw_new = [jobs[j]['tw_start'], jobs[j]['tw_start'] + jobs[j]['duration']]
+                        if check_five_days_feasibility(sol['w'], new_nurse, d):
+                            if sol['w'][new_nurse, d]:
+                                if check_eight_hours_feasibility(sol['w'], new_nurse, j, d):
+                                    for tw_exist in sol['w'][new_nurse, d]:
+                                        tw_feasible = True
+                                        feasible = check_overlap(tw_exist, tw_new)
+                                        if not feasible:
+                                            tw_feasible = False
+                                            break
+                                    if tw_feasible:
+                                        sol['w'][i, d].remove(tw_new)
+                                        sol['z'][j, d] = new_nurse
+                                        sol['w'][new_nurse, d].append(tw_new)
+                            else:
+                                sol['w'][i, d].remove(tw_new)
+                                sol['z'][j, d] = new_nurse
+                                sol['w'][new_nurse, d].append(tw_new)
             nurses.append(new_nurse)
-            
-    sol['w'] = find_w(nurses,sol['z'])
-    
     return sol,nurses
-
-
 
 def calculate_number_of_nurses(sol):
     #calculates the number of nurses works based on solution
@@ -903,7 +925,7 @@ init_method="heuristic"
 
 print("-----HEURISTIC-----")
 start = timer()
-number_of_nurses=15
+number_of_nurses=12
 sol_heuristic,nurses_heuristic = heuristic(number_of_nurses,search_previous)
 obj_heuristic=calculate_obj(sol_heuristic,nurses_heuristic)
 sol_approx,nurses_approx= generate_initial_solution(init_method,search_previous)
@@ -912,7 +934,7 @@ obj_approx=calculate_obj(sol_approx,nurses_approx)
 print("Approximate number of nurses needed by heuristic: ", len(nurses_approx))
 print("Computation time:",timer()-start,"seconds")
 #print(sol)
-print("Initial objective value for", len(nurses_heuristic), "nurses : ",obj_heuristic, )
+print("Initial objective value for", len(nurses_heuristic), "nurses : ",obj_heuristic)
 print("Check feasibility:",check_final_feasibility(nurses_heuristic,sol_heuristic))
 print(nurses_heuristic)
 
