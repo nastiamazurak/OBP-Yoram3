@@ -16,8 +16,8 @@ import pandas as pd
 
 try: 
     #read CSV
-    raw_data= pd.read_csv('hhc_job_data.csv')
-    
+    # for testing: raw_data= pd.read_csv('hhc_job_data.csv')[:5]
+    raw_data= pd.read_csv('hhc_job_data.csv').sort_values(by=['client_id'],ascending=True)
     #read headers
     header_names=[]
     for header in raw_data:
@@ -55,7 +55,6 @@ for row in data:
 sets={}
 days=header_names[-7:]
 clients = list(dict.fromkeys(raw_data.client_id.values.tolist()))
-
 sets['days']=days
 sets['clients']=clients
 
