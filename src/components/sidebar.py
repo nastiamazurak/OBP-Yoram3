@@ -19,7 +19,7 @@ import numpy as np
 # local imports
 from utils import helpers as hp
 
-
+# button_id = "submit-button"
 SIDEBAR_STYLE = {
     "width": "100%",
     "padding": "2rem 1rem",
@@ -65,7 +65,8 @@ sidebar = html.Div(
                     },
                 ),
                 html.Br(),
-                dbc.Button("Submit", id="submit-button", n_clicks=0),
+                dbc.Button("Submit", id="submit-inputs", n_clicks=0),
+                html.Div(id="hidden-output"),
             ],
             vertical=True,
             pills=True,
@@ -83,10 +84,34 @@ sidebar = html.Div(
 def update_output(contents, filename):
     content_string = contents.split(",")[1]
     decoded = base64.b64decode(content_string)
-    hp.save_file(filename, decoded)
+    hp.save_file(decoded)
     return html.Div([html.H5(filename)])
 
 
-# @callback(Output("suggested-nurses", "children"), Input("upload-data", "filename"))
-# def update_output_nurses(filename):
-#     return hp.get_suggested_number_of_nurses(filename)
+@callback(
+    Output("suggested-nurses", "children"), Input("output-datatable-info", "children")
+)
+def update_output_nurses(*vals):
+    if hp.check_if_saved:
+        return html.H6(
+            "Suggested number of nurses: " + str(hp.get_suggested_number_of_nurses())
+        )
+    else:
+        return html.H5("Please, load the file again.")
+
+
+@callback(Output("hidden-output", "children"), Input("submit-inputs", "n_clicks"))
+def submit_input(n_clicks):
+    if n_clicks > 0:
+        sol, nurses = hp.run_algorithms()
+        return dcc.Store(sol, nurses)
+
+
+# @callback(Output("not-used-output", "children"), Input("submit-inputs", "n_clicks"))
+# def submit_input(n_clicks):
+#     print(n_clicks)
+#     if n_clicks > 0:
+#         # sol, nurses = hp.run_algorithms()
+#         # print(sol, nurses)
+#         # return [dcc.Store(sol, nurses), html.H6("Heeeey")]
+#         return html.H6("The button was clicked.")

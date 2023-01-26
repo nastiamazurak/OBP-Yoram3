@@ -1,21 +1,35 @@
 import base64
 import os
 import pandas as pd
-from .functions import *
+from utils.functions import *
 from timeit import default_timer as timer
 
-UPLOAD_DIRECTORY = "utils/uploads"
+q = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+main_path = os.path.dirname(os.getcwd()) + "/src/utils/uploads/"
+UPLOAD_DIRECTORY = os.path.dirname(os.getcwd()) + "/utils/uploads/"
+main_path = q + "/utils/uploads/"
+UPLOAD_DIRECTORY = q + "/utils/uploads/"
 
-if not os.path.exists(UPLOAD_DIRECTORY):
-    os.makedirs(UPLOAD_DIRECTORY)
+
+if not os.path.exists(main_path):
+    os.makedirs(main_path)
 
 
-def save_file(name, content):
+def save_file(content):
     # Decode and store a file uploaded from UI.
     print("Saving file")
-    with open(os.path.join(UPLOAD_DIRECTORY, name), "wb") as fp:
+    with open(os.path.join(main_path, "user_upload.csv"), "wb") as fp:
         fp.write(content)
-    print(os.listdir(UPLOAD_DIRECTORY))
+    print(os.listdir(main_path))
+
+
+def check_if_saved():
+    if os.path.exists(main_path + "/user_upload.csv"):
+        print("File has been saved. " + main_path + "/user_upload.csv")
+        return True
+    else:
+        print("File has not been saved. " + main_path + "/user_upload.csv")
+        return False
 
 
 # convert time window hours to minutes, for example: 02:30 = 150
@@ -26,10 +40,10 @@ def hm_to_m(h):
     return t
 
 
-def initialize_dicts(filename):
+def initialize_dicts():
     try:
         # read CSV
-        raw_data = pd.read_csv("utils/uploads/" + filename)
+        raw_data = pd.read_csv(main_path + "/user_upload.csv")
 
         # read headers
         header_names = []
@@ -68,14 +82,21 @@ def initialize_dicts(filename):
     return jobs, sets
 
 
-def get_suggested_number_of_nurses(filename):
-    jobs, sets = initialize_dicts(filename)
+def get_suggested_number_of_nurses():
+    jobs, sets = initialize_dicts()
+    days = sets["days"]
+    search_previous = len(jobs) * len(days)
+    sol, nurses = generate_initial_solution("heuristic", search_previous, jobs, days)
+    print(len(nurses))
+    return len(nurses)
+
     # call function that returns # of nurses
 
 
 # a function to call when a submit button is pressed
-def run_algorithms(filename):
-    jobs, sets = initialize_dicts(filename)
+def run_algorithms():
+    print("Running algorithm!!!")
+    jobs, sets = initialize_dicts()
     days = sets["days"]
     clients = sets["clients"]
 
@@ -136,7 +157,9 @@ def run_algorithms(filename):
     sol, nurses = generate_initial_solution(init_method, search_previous, jobs, days)
     obj = calculate_obj(sol, jobs, objective, clients, nurses, days)
 
-    final_sol, obj_list = greedy_algorithm(sol, nurses, time_limit)
+    final_sol, obj_list = greedy_algorithm(
+        sol, nurses, time_limit, jobs, objective, clients, days
+    )
     print("Number of nurses found by greedy algorithm: ", len(nurses))
     # print(final_sol)
 
@@ -159,7 +182,18 @@ def run_algorithms(filename):
 
     start = timer()
     sol, nurses = generate_initial_solution(init_method, search_previous, jobs, days)
-    final_sol, obj_list = SA_algorithm(sol, nurses, step_max, time_limit, stagnation)
+    final_sol, obj_list = SA_algorithm(
+        sol,
+        nurses,
+        step_max,
+        time_limit,
+        stagnation,
+        jobs,
+        days,
+        clients,
+        objective,
+        initial_temperature,
+    )
     print("Number of nurses found by simulated annealing algorithm: ", len(nurses))
     # print(final_sol)
 
@@ -170,4 +204,108 @@ def run_algorithms(filename):
         check_final_feasibility(nurses, final_sol, jobs, days),
     )
 
-    ## TODO: return smth; If needed split this massive function into smaller one
+    return sol, nurses
+
+
+## Code for datasets: should be rewritten like that: def get_nurse_jobs(sol, nurses)
+
+
+def get_nurse_jobs():
+    newList = list(sol["z"].items())
+
+    justList = list(newList)
+
+    # display(justList[0][1])
+
+    ### [0][0][0] --> job id
+    ### [0][0][1] --> day
+    ### [0][1] --> nurse id
+
+    df = pd.DataFrame(justList, columns=["Tuple", "Nurses"])
+    # display(df)
+
+    df[["job id", "day"]] = pd.DataFrame(df.Tuple.tolist(), index=df.index)
+    # display(df)
+
+    df = df.drop(columns="Tuple")
+    # display(df)
+
+    dataset = pd.read_csv(main_path + "OBP dataset.csv")
+
+    dataset = dataset.iloc[:, :2]
+
+    bigdf = pd.merge(dataset, df, left_on="job_id", right_on="job id", how="right")
+
+    bigdf = bigdf.drop(columns="job_id")
+    # display(bigdf)
+
+    grouped = bigdf.groupby(["client_id", "day"])["Nurses"].nunique()
+    grouped = grouped.reset_index()
+    return grouped
+
+
+def get_nurse_shifts():
+    def mins_to_hrs(minutes):
+        hours, minutes = divmod(minutes, 60)
+        return f"{hours:02d}:{minutes:02d}"
+
+    # times_busy = list(sol['w'].items())
+
+    # newlist = list(times_busy)
+
+    # newdf = pd.DataFrame(newlist, columns = ['Tuple',"time_slots"])
+    # newdf[["nurse_id","day"]] = pd.DataFrame(newdf.Tuple.tolist(),index = newdf.index)
+    # newdf = newdf.drop(columns = 'Tuple')
+    # display(newdf['time_slots'][0][0][1])
+
+    timeslots = list(sol["w"].values())
+
+    def convert_and_format(nested_list):
+        nested_list = [
+            [[mins_to_hrs(int(x)) for x in sublist] for sublist in subsublist]
+            for subsublist in nested_list
+        ]
+        return nested_list
+
+    timeslots_converted = convert_and_format(timeslots)
+
+    solution_new = dict(zip(sol["w"].keys(), timeslots_converted))
+    # display(solution_new)
+
+    tasks = []
+    for key, value in solution_new.items():
+        nurse_id, day = key
+        for start, finish in value:
+            task = {
+                "task": f"Nurse {nurse_id}",
+                "start": start,
+                "finish": finish,
+                "day": day,
+            }
+            tasks.append(task)
+
+    tasks = pd.DataFrame(tasks)
+    return tasks
+
+
+def get_hrs_worked():
+    q = get_nurse_shifts()
+
+    df = pd.DataFrame(q)
+
+    df["start"] = pd.to_datetime(df["start"], format="%H:%M")
+
+    df["finish"] = pd.to_datetime(df["finish"], format="%H:%M")
+    first = df.groupby(["day", "task"])["start"].min().reset_index()
+    last = df.groupby(["day", "task"])["finish"].max().reset_index()
+    shifts = pd.merge(first, last, left_on=["day", "task"], right_on=["day", "task"])
+    shifts[["n", "nurse_id"]] = shifts["task"].str.split(" ", 1, expand=True)
+    shifts = shifts.drop(columns=["n", "task"])
+    shifts["hrs_worked"] = shifts["finish"] - shifts["start"]
+    shifts["start"] = shifts["start"].dt.time
+    shifts["finish"] = shifts["finish"].dt.time
+    shifts["total_shift"] = shifts["hrs_worked"].apply(
+        lambda x: x.total_seconds() / 3600
+    )
+
+    return shifts

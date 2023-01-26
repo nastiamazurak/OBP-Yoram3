@@ -437,17 +437,17 @@ def generate_initial_solution(init_method, search_previous, jobs, days):
                 if jobs[j][d] == 1:
                     z[j, d] = z_init[j, d]
     # time slots that nurse i is busy on day d:
-    w = find_w(nurses, z)
+    w = find_w(nurses, z, jobs, days)
 
     sol = {"z": z, "w": w}
 
-    if check_all_jobs_assigned(nurses, sol):
+    if check_all_jobs_assigned(nurses, sol, jobs, days):
         return sol, nurses
     else:
         generate_initial_solution(init_method, search_previous)
 
 
-def first_scenario(sol, cand_i, cand_j, cand_d, cand_c):
+def first_scenario(sol, cand_i, cand_j, cand_d, cand_c, nurses, jobs, days):
     # find another nurse to do job cand_j on day cand_d
     # cand_i should undertake this nurse's one job
 
@@ -457,9 +457,9 @@ def first_scenario(sol, cand_i, cand_j, cand_d, cand_c):
     # this nurse should not have jobs more than 5 days:
     # this nurse should not have another job started 8 hours ago or will start 8 hours later that day.
     for i in nurses:
-        if check_five_days_feasibility(sol["w"], i, cand_d):
+        if check_five_days_feasibility(sol["w"], i, cand_d, days):
             if sol["w"][i, cand_d]:
-                if check_eight_hours_feasibility(sol["w"], i, cand_j, cand_d):
+                if check_eight_hours_feasibility(sol["w"], i, cand_j, cand_d, jobs):
                     tw_new = [jobs[cand_j]["tw_start"], jobs[cand_j]["tw_due"]]
                     # if there are other jobs assigned to the nurse on the day job should be done:
                     tw_feasible = True
@@ -494,10 +494,10 @@ def first_scenario(sol, cand_i, cand_j, cand_d, cand_c):
                     if jobs[j][d] == 1:
                         if sol["z"][j, d] == i:
                             # check if cand_i can do it:
-                            if check_five_days_feasibility(sol["w"], cand_i, d):
+                            if check_five_days_feasibility(sol["w"], cand_i, d, days):
                                 if sol["w"][cand_i, d]:
                                     if check_eight_hours_feasibility(
-                                        sol["w"], cand_i, j, d
+                                        sol["w"], cand_i, j, d, jobs
                                     ):
                                         tw_new = [
                                             jobs[j]["tw_start"],
@@ -535,7 +535,7 @@ def first_scenario(sol, cand_i, cand_j, cand_d, cand_c):
                     if jobs[j][d] == 1:
                         if sol["z"][j, d] == i:
                             # check if cand_i can do it:
-                            if check_five_days_feasibility(sol["w"], cand_i, d):
+                            if check_five_days_feasibility(sol["w"], cand_i, d, days):
                                 if sol["w"][cand_i, d]:
                                     if check_eight_hours_feasibility(
                                         sol["w"], cand_i, j, d
@@ -575,7 +575,7 @@ def first_scenario(sol, cand_i, cand_j, cand_d, cand_c):
         return cand_i, cand_j, cand_d
 
 
-def first_scenario_old(sol, cand_i, cand_j, cand_d, cand_c):
+def first_scenario_old(sol, cand_i, cand_j, cand_d, cand_c, jobs, days):
     # find another nurse to do job cand_j on day cand_d
     # cand_i should undertake this nurse's one job
 
@@ -583,7 +583,7 @@ def first_scenario_old(sol, cand_i, cand_j, cand_d, cand_c):
     # this nurse should not have jobs more than 5 days:
     # this nurse should not have another job started 8 hours ago or will start 8 hours later that day.
     for i in nurses:
-        if check_five_days_feasibility(sol["w"], i, cand_d):
+        if check_five_days_feasibility(sol["w"], i, cand_d, days):
             if sol["w"][i, cand_d]:
                 if check_eight_hours_feasibility(sol["w"], i, cand_j, cand_d):
                     tw_new = [jobs[cand_j]["tw_start"], jobs[cand_j]["tw_due"]]
@@ -613,7 +613,7 @@ def first_scenario_old(sol, cand_i, cand_j, cand_d, cand_c):
                 if jobs[j][d] == 1:
                     if sol["z"][j, d] == i:
                         # check if cand_i can do it:
-                        if check_five_days_feasibility(sol["w"], cand_i, d):
+                        if check_five_days_feasibility(sol["w"], cand_i, d, days):
                             if sol["w"][cand_i, d]:
                                 if check_eight_hours_feasibility(
                                     sol["w"], cand_i, j, d
@@ -651,7 +651,7 @@ def first_scenario_old(sol, cand_i, cand_j, cand_d, cand_c):
         return cand_i, cand_j, cand_d
 
 
-def second_scenario(sol, nurses, cand_i, cand_j_list, cand_d_list):
+def second_scenario(sol, nurses, cand_i, cand_j_list, cand_d_list, jobs, days):
     new_i_list = []
     need_nurse = False
     for index in range(len(cand_j_list)):
@@ -661,9 +661,9 @@ def second_scenario(sol, nurses, cand_i, cand_j_list, cand_d_list):
         # this nurse should not have jobs more than 5 days:
         # this nurse should not have another job started 8 hours ago or will start 8 hours later that day.
         for i in nurses:
-            if check_five_days_feasibility(sol["w"], i, cand_d):
+            if check_five_days_feasibility(sol["w"], i, cand_d, days):
                 if sol["w"][i, cand_d]:
-                    if check_eight_hours_feasibility(sol["w"], i, cand_j, cand_d):
+                    if check_eight_hours_feasibility(sol["w"], i, cand_j, cand_d, jobs):
                         tw_new = [jobs[cand_j]["tw_start"], jobs[cand_j]["tw_due"]]
                         for tw_exist in sol["w"][i, cand_d]:
                             tw_feasible = True
@@ -693,7 +693,7 @@ def second_scenario(sol, nurses, cand_i, cand_j_list, cand_d_list):
     return new_i_list, nurses
 
 
-def generate_neighbour(sol, nurses, prob1, prob2):
+def generate_neighbour(sol, nurses, prob1, prob2, jobs, days, clients):
     # TWO SCENARIOS (MY HYPOTHESIS...), for now let's skip the second one (a bit complex...)
     cand_i = None
     # 1) DO BINARY SWITCH BETWEEN TWO JOBS (CHANGE THE ASSIGNMENTS), KEEP NUMBER OF NURSES THE SAME
@@ -719,7 +719,9 @@ def generate_neighbour(sol, nurses, prob1, prob2):
 
         new_i, new_j, new_d = None, None, None
         # choose another nurse, do feasibility check::
-        new_i, new_j, new_d = first_scenario(sol, cand_i, cand_j, cand_d, cand_c)
+        new_i, new_j, new_d = first_scenario(
+            sol, cand_i, cand_j, cand_d, cand_c, nurses, jobs, days
+        )
 
         # do binary switch between matches:
         sol["z"][cand_j, cand_d] = new_i
@@ -746,7 +748,7 @@ def generate_neighbour(sol, nurses, prob1, prob2):
 
             # choose another nurse, do feasibility check:
             new_i_list, nurses = second_scenario(
-                sol, nurses, cand_i, cand_j_list, cand_d_list
+                sol, nurses, cand_i, cand_j_list, cand_d_list, jobs, days
             )
 
             # do nurse elimination and switches:
@@ -757,7 +759,7 @@ def generate_neighbour(sol, nurses, prob1, prob2):
             new_nurse = max(nurses) + 1
             nurses.append(new_nurse)
 
-    sol["w"] = find_w(nurses, sol["z"])
+    sol["w"] = find_w(nurses, sol["z"], jobs, days)
 
     return sol
 
@@ -776,17 +778,17 @@ def calculate_number_of_nurses(sol):
     return number_nurses
 
 
-def greedy_algorithm(sol, nurses, time_limit):
+def greedy_algorithm(sol, nurses, time_limit, jobs, objective, clients, days):
     start = timer()
     current = 0
-    obj = calculate_obj(sol)
+    obj = calculate_obj(sol, jobs, objective, clients, nurses, days)
     step = 0
     obj_list = [obj]
     nurse_list = [len(nurses)]
     # create a neighbour for initial solution
-    new_sol = generate_neighbour(sol, nurses, prob1, prob2)
+    new_sol = generate_neighbour(sol, nurses, prob1, prob2, jobs, days, clients)
     # compare objective functions for initial solution
-    new_obj = calculate_obj(new_sol)
+    new_obj = calculate_obj(new_sol, jobs, objective, clients, nurses, days)
 
     while new_obj <= obj:
         # if the new solution is better than the previous solution (minimization)
@@ -802,10 +804,10 @@ def greedy_algorithm(sol, nurses, time_limit):
             break
         else:
             # create a neighbour
-            new_sol = generate_neighbour(sol, nurses, prob1, prob2)
+            new_sol = generate_neighbour(sol, nurses, prob1, prob2, jobs, days, clients)
 
             # compare objective functions
-            new_obj = calculate_obj(new_sol)
+            new_obj = calculate_obj(new_sol, jobs, objective, clients, nurses, days)
 
             step += 1
 
@@ -823,27 +825,38 @@ def greedy_algorithm(sol, nurses, time_limit):
     return new_sol, obj_list
 
 
-def find_temperature(num, acceptProb):
-    global search_previous
+def find_temperature(num, acceptProb, search_previous):
+    # global search_previous
     global init_method
     summ = 0
     for i in range(num):
         sol, nurses = generate_initial_solution(init_method, search_previous)
-        obj = calculate_obj(sol)
-        new_sol = generate_neighbour(sol, nurses, prob1, prob2)
-        new_obj = calculate_obj(new_sol)
+        obj = calculate_obj(sol, jobs, objective, clients, nurses, days)
+        new_sol = generate_neighbour(sol, nurses, prob1, prob2, jobs, days, clients)
+        new_obj = calculate_obj(new_sol, jobs, objective, clients, nurses, days)
         summ += abs(new_obj - obj)
     return (summ / num) / math.log(1 / acceptProb)
 
 
-def SA_algorithm(sol, nurses, step_max, time_limit, stagnation):
-    global initial_temperature
+def SA_algorithm(
+    sol,
+    nurses,
+    step_max,
+    time_limit,
+    stagnation,
+    jobs,
+    days,
+    clients,
+    objective,
+    initial_temperature,
+):
+    # global initial_temperature
     global prob1
     global prob2
     start = timer()
     count = 0
     step = 0
-    obj = calculate_obj(sol)
+    obj = calculate_obj(sol, jobs, objective, clients, nurses, days)
     obj_list = [obj]
     nurse_list = [len(nurses)]
     while step < step_max:
@@ -852,11 +865,11 @@ def SA_algorithm(sol, nurses, step_max, time_limit, stagnation):
 
         # T = 1-step/step_max
         # create a neighbour
-        new_sol = generate_neighbour(sol, nurses, prob1, prob2)
+        new_sol = generate_neighbour(sol, nurses, prob1, prob2, jobs, days, clients)
 
         # compare objective functions
 
-        new_obj = calculate_obj(new_sol)
+        new_obj = calculate_obj(new_sol, jobs, objective, clients, nurses, days)
 
         # if the new solution is better than the previous solution (minimization)
         if new_obj <= obj:
@@ -949,15 +962,15 @@ def SA_algorithm(sol, nurses, step_max, time_limit, stagnation):
 # # probability that governs neighbour generating rule:
 # # prob1: closer to 1 more changes the number of nurses, less binary switches
 # # prob1: closer to 0 more binary switches, less changes in the number of nurses
-# prob1 = 0.9
+prob1 = 0.9
 
 
 # # prob2: closer to 0 more decrements than increments in number of nurses
 # # prob2: closer to 1 more increments than decrements in number of nurses
-# prob2 = 0.1
+prob2 = 0.1
 
 # # initial probability for simulated annealing algorithm transition
-# prob_init = 0.95
+prob_init = 0.95
 
 # # If there is no improvement in last #stagnation steps, terminate the algorithm
 # stagnation = step_max / 5
@@ -970,7 +983,7 @@ def SA_algorithm(sol, nurses, step_max, time_limit, stagnation):
 # # method for finding the initial solution:
 # # "worst": the worst solution
 # # "heuristic": heuristic solution
-# init_method = "worst"
+init_method = "worst"
 
 # # =============================================================================
 # # Run algorithms:
@@ -1010,8 +1023,8 @@ def SA_algorithm(sol, nurses, step_max, time_limit, stagnation):
 
 # print("\n-----SIMULATED ANNEALING ALGORITHM-----")
 
-# # avg_over=10000
-# # initial_temperature = find_temperature(avg_over,prob_init)
+avg_over = 10000
+# initial_temperature = find_temperature(avg_over,prob_init,)
 # # print(initial_temperature)
 
 # if objective == "total":
