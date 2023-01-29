@@ -12,6 +12,8 @@ from dash import html, callback, dcc
 from dash.dependencies import Input, Output, State
 from dash import callback_context
 import dash_bootstrap_components as dbc
+import json
+import jsonpickle
 
 import pandas as pd
 import numpy as np
@@ -100,18 +102,15 @@ def update_output_nurses(*vals):
         return html.H5("Please, load the file again.")
 
 
-@callback(Output("hidden-output", "children"), Input("submit-inputs", "n_clicks"))
-def submit_input(n_clicks):
+@callback(
+    Output("stored-data", "children"),
+    Input("submit-inputs", "n_clicks"),
+    State("input-nurses", "value"),
+)
+def submit_input(n_clicks, value):
     if n_clicks > 0:
+        print("Hey hey hey!!!")
+        print(value)
+        ## pass value to run_algorithms
         sol, nurses = hp.run_algorithms()
-        return dcc.Store(sol, nurses)
-
-
-# @callback(Output("not-used-output", "children"), Input("submit-inputs", "n_clicks"))
-# def submit_input(n_clicks):
-#     print(n_clicks)
-#     if n_clicks > 0:
-#         # sol, nurses = hp.run_algorithms()
-#         # print(sol, nurses)
-#         # return [dcc.Store(sol, nurses), html.H6("Heeeey")]
-#         return html.H6("The button was clicked.")
+        return jsonpickle.encode({"sol": sol, "nurses": nurses})

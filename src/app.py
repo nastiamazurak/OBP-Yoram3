@@ -6,9 +6,14 @@ from dash import callback_context
 import dash_bootstrap_components as dbc
 
 # local imports
-from components import sidebar as sb
-from components import dropdown_menu as dm
+# from components import sidebar as sb
+from components.sidebar import sidebar
+from components.dropdown_menu import dropdown_menu
+from components.loading_bar import loading_bar
 from components import bar_nurse_jobs as bnj
+from components import gantt_chart as gantt
+from components import hrs_worked as hrs
+from components import time_shifts as ts
 
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.COSMO])
@@ -17,18 +22,46 @@ app.layout = html.Div(
     children=[
         dbc.Row(
             [
-                dbc.Col(sb.sidebar, width=3),
+                dbc.Col(sidebar, width=3),
                 dbc.Col(
-                    [html.H1("Client-centered care"), dm.dropdown_menu],
+                    [
+                        html.H1("Client-centered care"),
+                        loading_bar,
+                        dropdown_menu,
+                        dcc.Store(id="stored-data", data={}),
+                        gantt.render(app),
+                        bnj.render(app),
+                        html.Div(
+                            [hrs.render(app), ts.render(app)], style={"display": "flex"}
+                        )
+                        # dbc.Row(
+                        #     [
+                        #         dbc.Col(hrs.render(app), width=4.5),
+                        #         dbc.Col(ts.render(app), width=4.5),
+                        #     ]
+                        # )
+                        # dbc.Col([hrs.render(app), ts.render(app)]),
+                        # dbc.Col(ts.render(app), width=4),
+                    ],
                     width=9,
                 ),
             ]
         ),
-        dbc.Row([dbc.Col()]),
-        # bnj.bar_nurse_jobs
+        # dbc.Row(
+        #     [
+        #         dbc.Col(width=3),
+        #         dbc.Col([hrs.render(app), ts.render(app)], width=4.5),
+        #         # dbc.Col(ts.render(app), width=4.5),
+        #     ]
+        # ),
+        # dcc.Store(id="stored-data", data={}),
+        # dbc.Row(gantt.render(app)),
+        # dbc.Row(bnj.render(app)),
+        # dbc.Row([hrs.render(app), ts.render(app)]),
+        # dbc.Row(ts.render(app)),
     ]
 )
 
 
 if __name__ == "__main__":
-    app.run_server(port=8052)
+    app.run_server(port=8054)

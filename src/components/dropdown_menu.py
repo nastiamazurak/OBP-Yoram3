@@ -14,10 +14,12 @@ from utils import helpers as hp
 
 dropdown_menu = html.Div(id="dropdown-menu")
 
+# Input("submit-inputs", "n_clicks")
 
-@callback(Output("dropdown-menu", "children"), Input("submit-inputs", "n_clicks"))
-def show_menu(n_clicks):
-    if n_clicks > 0:
+
+@callback(Output("dropdown-menu", "children"), Input("stored-data", "children"))
+def show_menu(stored_data):
+    if stored_data is not None:
         return dcc.Dropdown(
             id="day_dropdown",
             options=[

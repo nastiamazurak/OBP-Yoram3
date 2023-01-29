@@ -1,8 +1,13 @@
+import ast
 import base64
 import os
+
 import pandas as pd
 from utils.functions import *
 from timeit import default_timer as timer
+import matplotlib
+
+matplotlib.use("Agg")
 
 q = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 main_path = os.path.dirname(os.getcwd()) + "/src/utils/uploads/"
@@ -210,7 +215,7 @@ def run_algorithms():
 ## Code for datasets: should be rewritten like that: def get_nurse_jobs(sol, nurses)
 
 
-def get_nurse_jobs():
+def get_nurse_jobs(sol, nurses):
     newList = list(sol["z"].items())
 
     justList = list(newList)
@@ -222,15 +227,21 @@ def get_nurse_jobs():
     ### [0][1] --> nurse id
 
     df = pd.DataFrame(justList, columns=["Tuple", "Nurses"])
-    # display(df)
-
-    df[["job id", "day"]] = pd.DataFrame(df.Tuple.tolist(), index=df.index)
-    # display(df)
+    print(df)
+    # tup = tuple(list(df['Tuple']))
+    # df['Tuple'] = tup
+    # df['length'] = len(tup)
+    # print('type is, ',df.Tuple.apply(type))
+    # df[["job id", "day"]] = pd.DataFrame(df.Tuple.tolist(), index=df.index)
+    df[["job id", "day"]] = df["Tuple"].str.split(",", expand=True)
+    df["job id"] = df["job id"].str.extract("(\d+)").astype(int)
+    df["day"] = df["day"].str.replace("'", "").str.strip()
+    print(df)
 
     df = df.drop(columns="Tuple")
     # display(df)
 
-    dataset = pd.read_csv(main_path + "OBP dataset.csv")
+    dataset = pd.read_csv(main_path + "user_upload.csv")
 
     dataset = dataset.iloc[:, :2]
 
@@ -244,7 +255,7 @@ def get_nurse_jobs():
     return grouped
 
 
-def get_nurse_shifts():
+def get_nurse_shifts(sol, nurses):
     def mins_to_hrs(minutes):
         hours, minutes = divmod(minutes, 60)
         return f"{hours:02d}:{minutes:02d}"
@@ -274,6 +285,7 @@ def get_nurse_shifts():
 
     tasks = []
     for key, value in solution_new.items():
+        key = ast.literal_eval(key)
         nurse_id, day = key
         for start, finish in value:
             task = {
@@ -288,8 +300,8 @@ def get_nurse_shifts():
     return tasks
 
 
-def get_hrs_worked():
-    q = get_nurse_shifts()
+def get_hrs_worked(sol, nurses):
+    q = get_nurse_shifts(sol, nurses)
 
     df = pd.DataFrame(q)
 
