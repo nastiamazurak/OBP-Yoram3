@@ -46,7 +46,7 @@ def find_job_id(z_init, number_nurses, day):
             if z_init[j, day] == number_nurses:
                 return j
 
-def calculate_obj(sol,nurses,objective="minmax"):
+def calculate_obj(sol,nurses,objective="total"):
     #Two options of objective as parameter: "total" or "minmax"
     minmax = 0
     total = 0
@@ -262,7 +262,24 @@ def find_w(nurses,z):
                 if jobs[j][d] == 1:
                     if z[j,d] == i:
                         w[i,d].append([jobs[j]['tw_start'],jobs[j]['tw_start'] + jobs[j]['duration']])
-    return w            
+    return w
+
+#nurse i works at day d for client c between tw
+def give_schedule(sol,nurses):
+    schedule = {}
+    for i in nurses:
+        schedule[i] = {}
+        for d in days:
+            schedule[i][d] = {}
+            for j in jobs:
+                if jobs[j][d] == 1:
+                    if sol['z'][j, d] == i:
+                        for c in clients:
+                            if jobs[j]['client_id'] == c:
+                                schedule[i][d][c] = [jobs[j]['tw_start'],jobs[j]['tw_start'] + jobs[j]['duration']]
+    return schedule
+
+
 
 # function needed for assignment:
 def assign_to_other_nurses(search_previous,number_nurses,nurses,w_init,z_init,cand_j,cand_d):
@@ -931,7 +948,7 @@ init_method="worst"
 
 print("-----HEURISTIC-----")
 start = timer()
-number_of_nurses=12
+number_of_nurses=15
 sol_heuristic,nurses_heuristic = heuristic(number_of_nurses,search_previous)
 obj_heuristic=calculate_obj(sol_heuristic,nurses_heuristic)
 sol_approx,nurses_approx= generate_initial_solution('heuristic',search_previous)
@@ -942,6 +959,8 @@ print("Computation time:",timer()-start,"seconds")
 
 print("Initial objective value for", len(nurses_heuristic), "nurses : ",obj_heuristic)
 print("Check feasibility:",check_final_feasibility(nurses_heuristic,sol_heuristic))
+#detailed schedule:
+print(give_schedule(sol_approx,nurses_approx))
 
 """
 print("\n-----GREEDY ALGORITHM-----")
