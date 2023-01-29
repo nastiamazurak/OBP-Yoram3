@@ -265,59 +265,124 @@ def find_w(nurses,z):
     return w            
 
 # function needed for assignment:
-def assign_to_other_nurses(search_previous,number_nurses,nurses,w_init,z_init,j,d):
-    tw_new = [jobs[j]['tw_start'],jobs[j]['tw_start'] + jobs[j]['duration']]
+def assign_to_other_nurses(search_previous,number_nurses,nurses,w_init,z_init,cand_j,cand_d):
+    tw_new = [jobs[cand_j]['tw_start'],jobs[cand_j]['tw_start'] + jobs[cand_j]['duration']]
     found_one = False
     found=None
+
+    # Find the set of nurses that client having job j on day d sees:
+    for c in clients:
+        if jobs[cand_j]['client_id'] == c:
+            cand_c=c
+
+    cand_i_list=[]
+    for i in nurses:
+        assigned_to_i=False
+        for j in jobs:
+            # if job j belongs to client c
+            if jobs[j]['client_id'] == cand_c:
+                for d in days:
+                    if jobs[j][d] == 1:
+                        if z_init[j, d] == i:
+                            assigned_to_i=True
+                            break
+        if assigned_to_i:
+            cand_i_list.append(i)
+    """
+    print(cand_j)
+    print(cand_d)
+    print(cand_c)
+    print(cand_i_list)
+    """
+
     # if there are other nurses to check:
     if len(nurses)>1:
         if len(nurses)<search_previous:
-            for cand in nurses:
-                if cand!=number_nurses:
+            for cand_i in cand_i_list:
+                if cand_i!=number_nurses:
                     # if this job fits the schedule of a nurse, choose her as a candidate for this job
-                    feasible = check_eight_hours_feasibility(w_init,cand,j,d) and check_five_days_feasibility(w_init,cand,d)
+                    feasible = check_eight_hours_feasibility(w_init,cand_i,cand_j,cand_d) and check_five_days_feasibility(w_init,cand_i,cand_d)
                     if feasible:
                         tw_feasible=True
-                        for tw_exist in w_init[cand,d]:
+                        for tw_exist in w_init[cand_i,cand_d]:
                             # if there is an overlap in candidate nurse's schedule on day d, skip to next nurse
                             feasible = check_overlap(tw_new,tw_exist)                
                             if not feasible: 
                                 tw_feasible=False
-                                found=cand
+                                found=cand_i
                                 break
                         if tw_feasible: 
                             found_one = True
-                            found=cand
+                            found=cand_i
                             break
+            # if there is an available nurse, assign the job to her
+            if found_one:
+                z_init[cand_j, cand_d] = found
+                w_init[found, cand_d].append(tw_new)
+            # if there is no available nurse that clients saw before, try other nurses:
+            else:
+                for cand_i in nurses:
+                    if cand_i != number_nurses:
+                        # if this job fits the schedule of a nurse, choose her as a candidate for this job
+                        feasible = check_eight_hours_feasibility(w_init, cand_i, cand_j,cand_d) and check_five_days_feasibility(w_init, cand_i,cand_d)
+                        if feasible:
+                            tw_feasible = True
+                            for tw_exist in w_init[cand_i, cand_d]:
+                                # if there is an overlap in candidate nurse's schedule on day d, skip to next nurse
+                                feasible = check_overlap(tw_new, tw_exist)
+                                if not feasible:
+                                    tw_feasible = False
+                                    found = cand_i
+                                    break
+                            if tw_feasible:
+                                found_one = True
+                                found = cand_i
+                                break
+                # if there is an available nurse, assign the job to her
+                if found_one:
+                    z_init[cand_j, cand_d] = found
+                    w_init[found, cand_d].append(tw_new)
+                # else, add one nurse to the system
+                else:
+                    number_nurses += 1
+                    nurses.append(number_nurses)
+                    z_init[cand_j, cand_d] = number_nurses
+                    w_init[number_nurses, cand_d].append(tw_new)
         else:
-            for cand in nurses[-search_previous:]:
-                if cand!=number_nurses:
+            for cand_i in nurses[-search_previous:]:
+                if cand_i!=number_nurses:
                     # if this job fits the schedule of a nurse, choose her as a candidate for this job
-                    feasible = check_eight_hours_feasibility(w_init,cand,j,d) and check_five_days_feasibility(w_init,cand,d)
+                    feasible = check_eight_hours_feasibility(w_init,cand_i,cand_j,cand_d) and check_five_days_feasibility(w_init,cand_i,cand_d)
                     if feasible:
                         tw_feasible=True
-                        for tw_exist in w_init[cand,d]:
+                        for tw_exist in w_init[cand_i,d]:
                             # if there is an overlap in candidate nurse's schedule on day d, skip to next nurse
                             feasible = check_overlap(tw_new,tw_exist)                
                             if not feasible: 
                                 tw_feasible=False
-                                found=cand
+                                found=cand_i
                                 break
                         if tw_feasible:
                             found_one = True
-                            found=cand
+                            found=cand_i
                             break
-    # if there is an available nurse, assign the job to her
-    if found_one:  
-        z_init[j,d] = found
-        w_init[found,d].append(tw_new)
-    # if there is no available nurse, add one nurse to the system
+            # if there is an available nurse, assign the job to her
+            if found_one:
+                z_init[cand_j, cand_d] = found
+                w_init[found, cand_d].append(tw_new)
+            # else, add one nurse to the system
+            else:
+                number_nurses += 1
+                nurses.append(number_nurses)
+                z_init[cand_j, cand_d] = number_nurses
+                w_init[number_nurses, cand_d].append(tw_new)
     else:
         number_nurses += 1
         nurses.append(number_nurses)
-        z_init[j,d] = number_nurses
-        w_init[number_nurses,d].append(tw_new) 
-    return number_nurses,nurses,w_init,z_init,j,d
+        z_init[cand_j, cand_d] = number_nurses
+        w_init[number_nurses, cand_d].append(tw_new)
+
+    return number_nurses,nurses,w_init,z_init,cand_j,cand_d
             
 def generate_initial_solution(init_method,search_previous):
     #generate initial solution 
@@ -450,7 +515,7 @@ def generate_neighbour(sol,nurses,prob1,prob2):
         cand_j,cand_d=random.choice(cand_c_list[cand_i])
         tw_new = [jobs[cand_j]['tw_start'], jobs[cand_j]['tw_start'] + jobs[cand_j]['duration']]
 
-        #try to assign it other nurses seeing that client
+        #try to assign it to other nurses seeing that client
         new_i_list=[]
         found_one=False
         for i in cand_c_list:
@@ -517,6 +582,7 @@ def generate_neighbour(sol,nurses,prob1,prob2):
             # check the jobs that the candidate nurse was previously assigned to:
             cand_j_list = []
             cand_d_list = []
+            cand_c_list = []
             tw_cand = []
             for j in jobs:
                 for d in days:
@@ -524,6 +590,10 @@ def generate_neighbour(sol,nurses,prob1,prob2):
                         if sol['z'][j, d] == cand_i:
                             cand_j_list.append(j)
                             cand_d_list.append(d)
+                            for c in clients:
+                                if jobs[j]['client_id'] == c:
+                                    cand_c_list.append(c)
+                                    break
                             tw_cand.append([jobs[j]['tw_start'], jobs[j]['tw_start'] + jobs[j]['duration']])
 
             # remove nurse:
@@ -536,11 +606,26 @@ def generate_neighbour(sol,nurses,prob1,prob2):
             for index in range(len(cand_j_list)):
                 cand_j = cand_j_list[index]
                 cand_d = cand_d_list[index]
+
+                cand_i_list = []
+                for i in nurses:
+                    assigned_to_i = False
+                    for j in jobs:
+                        # if job j belongs to client c
+                        if jobs[j]['client_id'] == cand_c_list[index]:
+                            for d in days:
+                                if jobs[j][d] == 1:
+                                    if sol['z'][j, d] == i:
+                                        assigned_to_i = True
+                                        break
+                    if assigned_to_i:
+                        cand_i_list.append(i)
+
                 nurse_candidates = []
                 found_one = False
                 # this nurse should not have jobs more than 5 days:
                 # this nurse should not have another job started 8 hours ago or will start 8 hours later that day.
-                for i in nurses:
+                for i in cand_i_list:
                     if check_five_days_feasibility(sol['w'], i, cand_d):
                         if sol['w'][i, cand_d]:
                             if check_eight_hours_feasibility(sol['w'], i, cand_j, cand_d):
@@ -565,7 +650,31 @@ def generate_neighbour(sol,nurses,prob1,prob2):
                     new_i_list.append(new_i)
                 # If no candidate left, add nurse again:
                 else:
-                    need_nurse = True
+                    for i in nurses:
+                        if check_five_days_feasibility(sol['w'], i, cand_d):
+                            if sol['w'][i, cand_d]:
+                                if check_eight_hours_feasibility(sol['w'], i, cand_j, cand_d):
+                                    tw_feasible = True
+                                    for tw_exist in sol['w'][i, cand_d]:
+                                        feasible = check_overlap(tw_exist, tw_cand[index])
+                                        if not feasible:
+                                            tw_feasible = False
+                                            break
+                                    if tw_feasible:
+                                        found_one = True
+                                        nurse_candidates.append(i)
+                            else:
+                                found_one = True
+                                nurse_candidates.append(i)
+                    # We checked all feasibility constraints, let's finally choose one nurse candidate:
+                    if found_one:
+                        new_i = random.choice(nurse_candidates)
+                        sol['w'][cand_i, cand_d].remove(tw_cand[index])
+                        sol['w'][new_i, cand_d].append(tw_cand[index])
+                        sol['z'][cand_j, cand_d] = new_i
+                        new_i_list.append(new_i)
+                    else:
+                        need_nurse = True
             if need_nurse:
                 nurses.append(cand_i)
 
@@ -822,7 +931,7 @@ init_method="worst"
 
 print("-----HEURISTIC-----")
 start = timer()
-number_of_nurses=14
+number_of_nurses=12
 sol_heuristic,nurses_heuristic = heuristic(number_of_nurses,search_previous)
 obj_heuristic=calculate_obj(sol_heuristic,nurses_heuristic)
 sol_approx,nurses_approx= generate_initial_solution('heuristic',search_previous)
@@ -834,7 +943,7 @@ print("Computation time:",timer()-start,"seconds")
 print("Initial objective value for", len(nurses_heuristic), "nurses : ",obj_heuristic)
 print("Check feasibility:",check_final_feasibility(nurses_heuristic,sol_heuristic))
 
-
+"""
 print("\n-----GREEDY ALGORITHM-----")
 
 start = timer()
@@ -865,6 +974,6 @@ print("Number of nurses found by simulated annealing algorithm: ", len(nurses))
 
 print("Objective value for",objective,"number of nurses seen:", obj_list[-1])
 print("Check feasibility of the final solution:",check_final_feasibility(nurses,final_sol))
-
+"""
 
 
