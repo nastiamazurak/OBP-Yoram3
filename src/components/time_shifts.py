@@ -24,27 +24,76 @@ def render(app: Dash) -> html.Div:
             data = jsonpickle.decode(stored_data)
             sol = data["sol"]
             nurses = data["nurses"]
+            schedule = data["schedule"]
             print("Not none!!!!")
-            dff = hp.get_hrs_worked(sol, nurses)
+            dff = hp.get_hrs_worked(sol, nurses, schedule)
             if option_slctd != "Weekly overview":
                 dff = dff[dff["day"] == option_slctd]
 
-                fig = px.bar(dff, x="nurse_id", y="total_shift")
+                fig = px.bar(
+                    dff,
+                    x="nurse id",
+                    y="total_shift",
+                    color="nurse id",
+                    title="Number of hours each nurse worked",
+                )
                 fig.update_layout(autosize=False, width=500, height=500)
 
                 return html.Div(dcc.Graph(figure=fig), id="time_shifts_barchart")
 
             else:
-                shifts = dff.groupby("nurse_id")["total_shift"].sum()
+                shifts = dff.groupby("nurse id")["total_shift"].sum()
                 shifts = shifts.reset_index()
                 shifts = pd.DataFrame(shifts).reset_index()
 
-                fig = px.bar(shifts, x="nurse_id", y="total_shift")
-                # fig.update_layout(autosize=False, width=500, height=500)
-                fig.update_layout(autosize=True)
+                fig = px.bar(
+                    shifts,
+                    x="nurse id",
+                    y="total_shift",
+                    color="nurse id",
+                    title="Number of hours each nurse worked:",
+                )
+                fig.update_layout(autosize=False, width=500, height=500)
+                fig.update_layout(showlegend=False)
 
                 return html.Div(dcc.Graph(figure=fig), id="time_shifts_barchart")
 
     return html.Div(
         id="time_shifts_barchart", style={"width": "100%", "display": "inline-block"}
     )
+
+
+# def render(app: Dash) -> html.Div:
+#     @app.callback(
+#         Output("time_shifts_barchart", "children"),
+#         [Input("day_dropdown", "value"), Input("stored-data", "children")],
+#     )
+#     def update_time_shift_graph(option_slctd, stored_data) -> html.Div:
+#         if stored_data is not None:
+#             data = jsonpickle.decode(stored_data)
+#             sol = data["sol"]
+#             nurses = data["nurses"]
+#             print("Not none!!!!")
+#             dff = hp.get_hrs_worked(sol, nurses)
+#             if option_slctd != "Weekly overview":
+#                 dff = dff[dff["day"] == option_slctd]
+
+#                 fig = px.bar(dff, x="nurse_id", y="total_shift")
+#                 fig.update_layout(autosize=False, width=500, height=500)
+
+#                 return html.Div(dcc.Graph(figure=fig), id="time_shifts_barchart")
+
+#             else:
+#                 shifts = dff.groupby("nurse_id")["total_shift"].sum()
+#                 shifts = shifts.reset_index()
+#                 shifts = pd.DataFrame(shifts).reset_index()
+
+#                 fig = px.bar(shifts, x="nurse_id", y="total_shift")
+#                 # fig.update_layout(autosize=False, width=500, height=500)
+#                 fig.update_layout(autosize=True)
+
+#                 return html.Div(dcc.Graph(figure=fig), id="time_shifts_barchart")
+
+#     return html.Div(
+#         id="time_shifts_barchart", style={"width": "100%", "display": "inline-block"}
+#     )

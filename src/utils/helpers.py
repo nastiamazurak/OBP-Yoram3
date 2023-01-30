@@ -3,9 +3,11 @@ import base64
 import os
 
 import pandas as pd
-from utils.functions import *
+
+# from src.utils.functions import *
 from timeit import default_timer as timer
 import matplotlib
+from utils.functions import *
 
 matplotlib.use("Agg")
 
@@ -90,8 +92,11 @@ def initialize_dicts():
 def get_suggested_number_of_nurses():
     jobs, sets = initialize_dicts()
     days = sets["days"]
+    clients = sets["clients"]
     search_previous = len(jobs) * len(days)
-    sol, nurses = generate_initial_solution("heuristic", search_previous, jobs, days)
+    sol, nurses = generate_initial_solution(
+        "heuristic", search_previous, jobs, days, clients
+    )
     print(len(nurses))
     return len(nurses)
 
@@ -99,7 +104,7 @@ def get_suggested_number_of_nurses():
 
 
 # a function to call when a submit button is pressed
-def run_algorithms():
+def run_algorithms(number_of_nurses):
     print("Running algorithm!!!")
     jobs, sets = initialize_dicts()
     days = sets["days"]
@@ -146,29 +151,42 @@ def run_algorithms():
 
     print("-----HEURISTIC-----")
     start = timer()
-    sol, nurses = generate_initial_solution("heuristic", search_previous, jobs, days)
-    obj = calculate_obj(sol, jobs, objective, clients, nurses, days)
+    # number_of_nurses = nurses
+    sol_heuristic, nurses_heuristic = heuristic(
+        jobs, days, clients, number_of_nurses, search_previous
+    )
+    obj_heuristic = calculate_obj(clients, jobs, days, sol_heuristic, nurses_heuristic)
 
+    sol_approx, nurses_approx = generate_initial_solution(
+        "heuristic", search_previous, jobs, days, clients
+    )
+    obj_approx = calculate_obj(clients, jobs, days, sol_approx, nurses_approx)
     # number of nurses needed approximately:
-    print("Approximate number of nurses needed by heuristic: ", len(nurses))
+    print("Approximate number of nurses needed by heuristic: ", len(nurses_approx))
     print("Computation time:", timer() - start, "seconds")
+
     # print(sol)
-    print("Initial objective value : ", obj)
-    print("Check feasibility:", check_final_feasibility(nurses, sol, jobs, days))
+    print(
+        "Initial objective value for", len(nurses_heuristic), "nurses : ", obj_heuristic
+    )
+    print(
+        "Check feasibility:",
+        check_final_feasibility(nurses_heuristic, sol_heuristic, jobs, days),
+    )
 
     print("\n-----GREEDY ALGORITHM-----")
 
     start = timer()
-    sol, nurses = generate_initial_solution(init_method, search_previous, jobs, days)
-    obj = calculate_obj(sol, jobs, objective, clients, nurses, days)
-
-    final_sol, obj_list = greedy_algorithm(
-        sol, nurses, time_limit, jobs, objective, clients, days
+    sol, nurses = generate_initial_solution(
+        init_method, search_previous, jobs, days, clients
     )
-    print("Number of nurses found by greedy algorithm: ", len(nurses))
-    # print(final_sol)
+    obj = calculate_obj(clients, jobs, days, sol, nurses)
 
-    print("Objective falue for", objective, "number of nurses seen: ", obj_list[-1])
+    final_sol, obj_list = greedy_algorithm(sol, nurses, time_limit, jobs, days, clients)
+    print("Number of nurses found by greedy algorithm: ", len(nurses))
+    print(final_sol)
+
+    print("Objective value for", objective, "number of nurses seen: ", obj_list[-1])
     print(
         "Check feasibility of the final solution:",
         check_final_feasibility(nurses, final_sol, jobs, days),
@@ -176,40 +194,48 @@ def run_algorithms():
 
     print("\n-----SIMULATED ANNEALING ALGORITHM-----")
 
-    # avg_over=10000
-    # initial_temperature = find_temperature(avg_over,prob_init)
-    # print(initial_temperature)
+    initial_temperature = find_temperature(
+        prob1, prob2, search_previous, avg_over, prob_init, jobs, days, clients
+    )
+    print("Initial temperature:", initial_temperature)
+    print(
+        "Computation time:",
+        timer() - start,
+        "seconds for finding the initial temperature",
+    )
 
-    if objective == "total":
-        initial_temperature = 4.2  # :for total, found above, no need to run it again
-    elif objective == "minmax":
-        initial_temperature = 0.9  # :for minmax, found above, no need to run it again
-
-    start = timer()
-    sol, nurses = generate_initial_solution(init_method, search_previous, jobs, days)
+    sol, nurses = generate_initial_solution(
+        init_method, search_previous, jobs, days, clients
+    )
     final_sol, obj_list = SA_algorithm(
         sol,
         nurses,
         step_max,
         time_limit,
         stagnation,
+        initial_temperature,
+        number_of_nurses,
         jobs,
         days,
         clients,
-        objective,
-        initial_temperature,
     )
     print("Number of nurses found by simulated annealing algorithm: ", len(nurses))
-    # print(final_sol)
+    print(final_sol)
 
-    # check feasilbility of the final solution (not complete)
     print("Objective value for", objective, "number of nurses seen:", obj_list[-1])
     print(
         "Check feasibility of the final solution:",
         check_final_feasibility(nurses, final_sol, jobs, days),
     )
 
-    return sol, nurses
+    schedule = give_schedule(final_sol, nurses, days, jobs, clients)
+
+    # if objective == "total":
+    #     initial_temperature = 4.2  # :for total, found above, no need to run it again
+    # elif objective == "minmax":
+    #     initial_temperature = 0.9  # :for minmax, found above, no need to run it again
+
+    return final_sol, nurses, schedule
 
 
 ## Code for datasets: should be rewritten like that: def get_nurse_jobs(sol, nurses)
@@ -227,7 +253,7 @@ def get_nurse_jobs(sol, nurses):
     ### [0][1] --> nurse id
 
     df = pd.DataFrame(justList, columns=["Tuple", "Nurses"])
-    print(df)
+
     # tup = tuple(list(df['Tuple']))
     # df['Tuple'] = tup
     # df['length'] = len(tup)
@@ -236,7 +262,6 @@ def get_nurse_jobs(sol, nurses):
     df[["job id", "day"]] = df["Tuple"].str.split(",", expand=True)
     df["job id"] = df["job id"].str.extract("(\d+)").astype(int)
     df["day"] = df["day"].str.replace("'", "").str.strip()
-    print(df)
 
     df = df.drop(columns="Tuple")
     # display(df)
@@ -252,70 +277,65 @@ def get_nurse_jobs(sol, nurses):
 
     grouped = bigdf.groupby(["client_id", "day"])["Nurses"].nunique()
     grouped = grouped.reset_index()
+
     return grouped
 
 
-def get_nurse_shifts(sol, nurses):
+def get_nurse_shifts(sol, nurses, schedule):
     def mins_to_hrs(minutes):
-        hours, minutes = divmod(minutes, 60)
+        hours, minutes = divmod(int(minutes), 60)
         return f"{hours:02d}:{minutes:02d}"
 
-    # times_busy = list(sol['w'].items())
+    nurse_id = []
+    day = []
+    client_id = []
+    start_time = []
+    end_time = []
 
-    # newlist = list(times_busy)
+    for n_id, days in schedule.items():
+        for day_name, clients in days.items():
+            for c_id, times in clients.items():
+                nurse_id.append(n_id)
+                day.append(day_name)
+                client_id.append(c_id)
+                start_time.append(times[0])
+                end_time.append(times[1])
 
-    # newdf = pd.DataFrame(newlist, columns = ['Tuple',"time_slots"])
-    # newdf[["nurse_id","day"]] = pd.DataFrame(newdf.Tuple.tolist(),index = newdf.index)
-    # newdf = newdf.drop(columns = 'Tuple')
-    # display(newdf['time_slots'][0][0][1])
+    df = pd.DataFrame(
+        {
+            "nurse id": nurse_id,
+            "day": day,
+            "client_id": client_id,
+            "start_time": start_time,
+            "end_time": end_time,
+        }
+    )
 
-    timeslots = list(sol["w"].values())
+    df["start_time"] = df["start_time"].apply(mins_to_hrs)
+    df["end_time"] = df["end_time"].apply(mins_to_hrs)
+    print("this is Berkans new function output: ", df)
 
-    def convert_and_format(nested_list):
-        nested_list = [
-            [[mins_to_hrs(int(x)) for x in sublist] for sublist in subsublist]
-            for subsublist in nested_list
-        ]
-        return nested_list
-
-    timeslots_converted = convert_and_format(timeslots)
-
-    solution_new = dict(zip(sol["w"].keys(), timeslots_converted))
-    # display(solution_new)
-
-    tasks = []
-    for key, value in solution_new.items():
-        key = ast.literal_eval(key)
-        nurse_id, day = key
-        for start, finish in value:
-            task = {
-                "task": f"Nurse {nurse_id}",
-                "start": start,
-                "finish": finish,
-                "day": day,
-            }
-            tasks.append(task)
-
-    tasks = pd.DataFrame(tasks)
-    return tasks
+    return df
 
 
-def get_hrs_worked(sol, nurses):
-    q = get_nurse_shifts(sol, nurses)
+def get_hrs_worked(sol, nurses, schedule):
+    q = get_nurse_shifts(sol, nurses, schedule)
 
     df = pd.DataFrame(q)
 
-    df["start"] = pd.to_datetime(df["start"], format="%H:%M")
+    df["start_time"] = pd.to_datetime(df["start_time"], format="%H:%M")
 
-    df["finish"] = pd.to_datetime(df["finish"], format="%H:%M")
-    first = df.groupby(["day", "task"])["start"].min().reset_index()
-    last = df.groupby(["day", "task"])["finish"].max().reset_index()
-    shifts = pd.merge(first, last, left_on=["day", "task"], right_on=["day", "task"])
-    shifts[["n", "nurse_id"]] = shifts["task"].str.split(" ", 1, expand=True)
-    shifts = shifts.drop(columns=["n", "task"])
-    shifts["hrs_worked"] = shifts["finish"] - shifts["start"]
-    shifts["start"] = shifts["start"].dt.time
-    shifts["finish"] = shifts["finish"].dt.time
+    df["end_time"] = pd.to_datetime(df["end_time"], format="%H:%M")
+    first = df.groupby(["day", "nurse id"])["start_time"].min().reset_index()
+    last = df.groupby(["day", "nurse id"])["end_time"].max().reset_index()
+    shifts = pd.merge(
+        first, last, left_on=["day", "nurse id"], right_on=["day", "nurse id"]
+    )
+    # shifts[["n", "nurse_id"]] = shifts["nurse"].str.split(" ", 1, expand=True)
+    # shifts = shifts.drop(columns=["n", "task"])
+    shifts["hrs_worked"] = shifts["end_time"] - shifts["start_time"]
+    shifts["start_time"] = shifts["start_time"].dt.time
+    shifts["end_time"] = shifts["end_time"].dt.time
     shifts["total_shift"] = shifts["hrs_worked"].apply(
         lambda x: x.total_seconds() / 3600
     )

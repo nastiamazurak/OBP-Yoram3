@@ -112,5 +112,5 @@ def submit_input(n_clicks, value):
         print("Hey hey hey!!!")
         print(value)
         ## pass value to run_algorithms
-        sol, nurses = hp.run_algorithms()
-        return jsonpickle.encode({"sol": sol, "nurses": nurses})
+        sol, nurses, schedule = hp.run_algorithms(value)
+        return jsonpickle.encode({"sol": sol, "nurses": nurses, "schedule": schedule})

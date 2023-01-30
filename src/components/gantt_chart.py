@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
+# -- coding: utf-8 --
 import plotly.graph_objects as go
 
 import dash
 import pandas as pd
+import numpy as np
 
 # from IPython.core.display_functions import display
 from dash import dcc
@@ -11,7 +12,7 @@ from dash.dependencies import Input, Output
 from dash.exceptions import PreventUpdate
 from utils import helpers as hp
 import plotly.express as px
-from utils import helpers as hp
+import matplotlib.pyplot as plt
 import jsonpickle
 
 
@@ -25,19 +26,22 @@ def render(app: Dash) -> html.Div:
             data = jsonpickle.decode(stored_data)
             sol = data["sol"]
             nurses = data["nurses"]
+            schedule = data["schedule"]
             print("Not none!!!!")
-            getTss = hp.get_nurse_shifts(sol, nurses)
+            getTss = hp.get_nurse_shifts(sol, nurses, schedule)
 
             if option_slctd != "Weekly overview":
+                print("jjjj", getTss)
                 getTss = getTss[getTss["day"] == option_slctd]
-                getTss["start"] = pd.to_datetime(getTss["start"], format="%H:%M")
-                getTss["finish"] = pd.to_datetime(getTss["finish"], format="%H:%M")
+                getTss["start"] = pd.to_datetime(getTss["start_time"], format="%H:%M")
+                getTss["finish"] = pd.to_datetime(getTss["end_time"], format="%H:%M")
+
                 fig = px.timeline(
                     getTss,
                     x_start="start",
                     x_end="finish",
-                    y="task",
-                    title="Daily Schedule",
+                    y="nurse id",
+                    color="client_id",
                 )
                 fig.update_xaxes(tickformat="%H:%M")
 
