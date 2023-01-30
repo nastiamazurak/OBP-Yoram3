@@ -191,51 +191,15 @@ def run_algorithms(number_of_nurses):
         "Check feasibility of the final solution:",
         check_final_feasibility(nurses, final_sol, jobs, days),
     )
-
-    print("\n-----SIMULATED ANNEALING ALGORITHM-----")
-
-    initial_temperature = find_temperature(
-        prob1, prob2, search_previous, avg_over, prob_init, jobs, days, clients
-    )
-    print("Initial temperature:", initial_temperature)
-    print(
-        "Computation time:",
-        timer() - start,
-        "seconds for finding the initial temperature",
-    )
-
-    sol, nurses = generate_initial_solution(
-        init_method, search_previous, jobs, days, clients
-    )
-    final_sol, obj_list = SA_algorithm(
-        sol,
-        nurses,
-        step_max,
-        time_limit,
-        stagnation,
-        initial_temperature,
-        number_of_nurses,
-        jobs,
-        days,
-        clients,
-    )
-    print("Number of nurses found by simulated annealing algorithm: ", len(nurses))
-    print(final_sol)
-
-    print("Objective value for", objective, "number of nurses seen:", obj_list[-1])
-    print(
-        "Check feasibility of the final solution:",
-        check_final_feasibility(nurses, final_sol, jobs, days),
-    )
-
-    schedule = give_schedule(final_sol, nurses, days, jobs, clients)
+    # schedule = give_schedule(final_sol, nurses, days, jobs, clients)
+    schedule = give_schedule(sol_heuristic, nurses_heuristic, days, jobs, clients)
 
     # if objective == "total":
     #     initial_temperature = 4.2  # :for total, found above, no need to run it again
     # elif objective == "minmax":
     #     initial_temperature = 0.9  # :for minmax, found above, no need to run it again
 
-    return final_sol, nurses, schedule
+    return sol_heuristic, nurses_heuristic, schedule
 
 
 ## Code for datasets: should be rewritten like that: def get_nurse_jobs(sol, nurses)
