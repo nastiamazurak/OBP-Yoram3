@@ -21,6 +21,7 @@ def run_algorithm(n_clicks):
     Output("loading", "children"),
     Input("submit-inputs", "n_clicks"),
     State("stored-data", "children"),
+    # State("error-message", "children"),
 )
 def run_loading(n_clicks, stored_data):
     if n_clicks > 0:
@@ -30,13 +31,21 @@ def run_loading(n_clicks, stored_data):
         # replace with your actual algorithm
 
 
-@callback(Output("output-text", "style"), [Input("stored-data", "children")])
-def hide_text(stored_data):
-    if stored_data is not None:
+@callback(
+    Output("output-text", "style"),
+    [Input("stored-data", "children")],
+    State("error-message", "children"),
+)
+def hide_text(stored_data, error_message):
+    if stored_data is not None or error_message is not None:
         return {"display": "none"}
 
 
-@callback(Output("loading", "style"), [Input("stored-data", "children")])
-def hide_loading(stored_data):
-    if stored_data is not None:
+@callback(
+    Output("loading", "style"),
+    Input("stored-data", "children"),
+    State("error-message", "children"),
+)
+def hide_loading(stored_data, error_message):
+    if stored_data is not None or error_message is not None:
         return {"display": "none"}

@@ -33,32 +33,12 @@ app.layout = html.Div(
                         bnj.render(app),
                         html.Div(
                             [hrs.render(app), ts.render(app)], style={"display": "flex"}
-                        )
-                        # dbc.Row(
-                        #     [
-                        #         dbc.Col(hrs.render(app), width=4.5),
-                        #         dbc.Col(ts.render(app), width=4.5),
-                        #     ]
-                        # )
-                        # dbc.Col([hrs.render(app), ts.render(app)]),
-                        # dbc.Col(ts.render(app), width=4),
+                        ),
                     ],
                     width=9,
                 ),
             ]
         ),
-        # dbc.Row(
-        #     [
-        #         dbc.Col(width=3),
-        #         dbc.Col([hrs.render(app), ts.render(app)], width=4.5),
-        #         # dbc.Col(ts.render(app), width=4.5),
-        #     ]
-        # ),
-        # dcc.Store(id="stored-data", data={}),
-        # dbc.Row(gantt.render(app)),
-        # dbc.Row(bnj.render(app)),
-        # dbc.Row([hrs.render(app), ts.render(app)]),
-        # dbc.Row(ts.render(app)),
     ]
 )
 

@@ -1,6 +1,7 @@
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import jsonpickle
 
 import dash
 
@@ -12,14 +13,18 @@ from utils import helpers as hp
 
 # local imports
 
-dropdown_menu = html.Div(id="dropdown-menu")
+dropdown_menu = html.Div([html.Div(id="dropdown-menu"), html.Div(id="error-message")])
 
 # Input("submit-inputs", "n_clicks")
 
 
-@callback(Output("dropdown-menu", "children"), Input("stored-data", "children"))
-def show_menu(stored_data):
-    if stored_data is not None:
+@callback(
+    Output("dropdown-menu", "children"),
+    Input("stored-data", "children"),
+    State("error-message", "children"),
+)
+def show_menu(stored_data, error_message):
+    if stored_data is not None and error_message == "":
         return dcc.Dropdown(
             id="day_dropdown",
             options=[

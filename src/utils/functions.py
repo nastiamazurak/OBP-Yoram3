@@ -2,11 +2,8 @@
 # -*- coding: utf-8 -*-
 """
 Created on Wed Jan 11 11:10:34 2023
-
 @author: K. B. Arik
-
 Enjoy reading :)
-
 """
 
 # =============================================================================
@@ -264,7 +261,21 @@ def heuristic(jobs, days, clients, number, search_previous):
     if found:
         return sol, nurses
     else:
-        raise ValueError("Change the number of nurses!")
+        sol_heur, nurses_heur = generate_initial_solution(
+            "heuristic", search_previous, jobs, days, clients
+        )
+        len_nurses_heur = len(nurses_heur)
+        if number < len(nurses):
+            print("Too few nurses! We suggest employing", len_nurses_heur, "nurses!")
+            raise ValueError(
+                "Too few nurses! We suggest employing", len_nurses_heur, "nurses!"
+            )
+        elif number > len(nurses):
+            print("Too much nurses! We suggest employing", len_nurses_heur, "nurses!")
+            raise ValueError(
+                "Too much nurses! We suggest employing", len_nurses_heur, "nurses!"
+            )
+        return sol_heur, nurses_heur
 
 
 def find_x(nurses, z, clients, jobs, days):

@@ -198,7 +198,7 @@ def run_algorithms(number_of_nurses):
     #     initial_temperature = 4.2  # :for total, found above, no need to run it again
     # elif objective == "minmax":
     #     initial_temperature = 0.9  # :for minmax, found above, no need to run it again
-
+    print("The end of the algorithm")
     return sol_heuristic, nurses_heuristic, schedule
 
 

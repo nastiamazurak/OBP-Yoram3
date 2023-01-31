@@ -103,14 +103,26 @@ def update_output_nurses(*vals):
 
 
 @callback(
-    Output("stored-data", "children"),
+    [Output("stored-data", "children"), Output("error-message", "children")],
     Input("submit-inputs", "n_clicks"),
     State("input-nurses", "value"),
 )
 def submit_input(n_clicks, value):
     if n_clicks > 0:
-        print("Hey hey hey!!!")
-        print(value)
-        ## pass value to run_algorithms
-        sol, nurses, schedule = hp.run_algorithms(value)
-        return jsonpickle.encode({"sol": sol, "nurses": nurses, "schedule": schedule})
+        print("Entered number of nurses: " + str(value))
+        try:
+            sol, nurses, schedule = hp.run_algorithms(value)
+            return (
+                jsonpickle.encode(
+                    {
+                        "sol": sol,
+                        "nurses": nurses,
+                        "schedule": schedule,
+                    }
+                ),
+                "",
+            )
+        except Exception as e:
+            return (), html.H4(
+                "Error: " + str(e), style={"align": "center", "color": "#cc0000"}
+            )
