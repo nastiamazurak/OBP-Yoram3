@@ -19,7 +19,10 @@ import jsonpickle
 def render(app: Dash) -> html.Div:
     @app.callback(
         Output("my_gantt", "children"),
-        [Input("day_dropdown", "value"), Input("stored-data", "children")],
+        [
+            Input("day_dropdown", "value"),
+            Input("stored-data", "children"),
+        ],
     )
     def update_first_graph(option_slctd, stored_data) -> html.Div:
         if stored_data is not None:

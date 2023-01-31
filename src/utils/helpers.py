@@ -174,23 +174,6 @@ def run_algorithms(number_of_nurses):
         check_final_feasibility(nurses_heuristic, sol_heuristic, jobs, days),
     )
 
-    print("\n-----GREEDY ALGORITHM-----")
-
-    start = timer()
-    sol, nurses = generate_initial_solution(
-        init_method, search_previous, jobs, days, clients
-    )
-    obj = calculate_obj(clients, jobs, days, sol, nurses)
-
-    final_sol, obj_list = greedy_algorithm(sol, nurses, time_limit, jobs, days, clients)
-    print("Number of nurses found by greedy algorithm: ", len(nurses))
-    print(final_sol)
-
-    print("Objective value for", objective, "number of nurses seen: ", obj_list[-1])
-    print(
-        "Check feasibility of the final solution:",
-        check_final_feasibility(nurses, final_sol, jobs, days),
-    )
     # schedule = give_schedule(final_sol, nurses, days, jobs, clients)
     schedule = give_schedule(sol_heuristic, nurses_heuristic, days, jobs, clients)
 
