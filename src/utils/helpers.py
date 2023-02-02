@@ -51,6 +51,9 @@ def initialize_dicts():
     try:
         # read CSV
         raw_data = pd.read_csv(main_path + "/user_upload.csv")
+        print(raw_data)
+        raw_data = raw_data.sort_values(by = ["client_id", "job_id"], ascending = [True, True])
+        print(raw_data)
 
         # read headers
         header_names = []
@@ -184,7 +187,6 @@ def run_algorithms(number_of_nurses):
     print("The end of the algorithm")
     return sol_heuristic, nurses_heuristic, schedule
 
-
 ## Code for datasets: should be rewritten like that: def get_nurse_jobs(sol, nurses)
 
 
@@ -239,14 +241,16 @@ def get_nurse_shifts(sol, nurses, schedule):
     start_time = []
     end_time = []
 
+
     for n_id, days in schedule.items():
         for day_name, clients in days.items():
             for c_id, times in clients.items():
-                nurse_id.append(n_id)
-                day.append(day_name)
-                client_id.append(c_id)
-                start_time.append(times[0])
-                end_time.append(times[1])
+                for i in range(len(times)):
+                    nurse_id.append(n_id)
+                    day.append(day_name)
+                    client_id.append(c_id)
+                    start_time.append(times[i][0])
+                    end_time.append(times[i][1])
 
     df = pd.DataFrame(
         {
@@ -260,7 +264,7 @@ def get_nurse_shifts(sol, nurses, schedule):
 
     df["start_time"] = df["start_time"].apply(mins_to_hrs)
     df["end_time"] = df["end_time"].apply(mins_to_hrs)
-    print("this is Berkans new function output: ", df)
+    #print("this is Berkans new function output: ", df)
 
     return df
 
