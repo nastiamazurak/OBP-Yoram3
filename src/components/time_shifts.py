@@ -37,7 +37,13 @@ def render(app: Dash) -> html.Div:
                     color="nurse id",
                     title="Number of hours each nurse worked",
                 )
-                fig.update_layout(autosize=False, width=500, height=500)
+                fig.update_layout(
+                    autosize=False,
+                    width=500,
+                    height=500,
+                    yaxis_title="Hours worked",
+                    xaxis_title="Nurse id",
+                )
 
                 return html.Div(dcc.Graph(figure=fig), id="time_shifts_barchart")
 
@@ -53,7 +59,13 @@ def render(app: Dash) -> html.Div:
                     color="nurse id",
                     title="Number of hours each nurse worked:",
                 )
-                fig.update_layout(autosize=False, width=500, height=500)
+                fig.update_layout(
+                    autosize=False,
+                    width=500,
+                    height=500,
+                    yaxis_title="Hours worked",
+                    xaxis_title="Nurse id",
+                )
                 fig.update_layout(showlegend=False)
 
                 return html.Div(dcc.Graph(figure=fig), id="time_shifts_barchart")

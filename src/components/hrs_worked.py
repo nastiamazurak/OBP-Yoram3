@@ -30,7 +30,9 @@ def render(app: Dash) -> html.Div:
                 dff = dff[dff["day"] == option_slctd]
 
                 fig = px.box(dff, y="total_shift", title="Nurse Work Time Distribution")
-                fig.update_layout(autosize=False, width=500, height=500)
+                fig.update_layout(
+                    autosize=False, width=500, height=500, yaxis_title="Hours worked"
+                )
                 mean_value = round(dff["total_shift"].mean(), 2)
                 fig.add_annotation(
                     text=f"Mean nr hrs worked: {mean_value}",
@@ -47,7 +49,9 @@ def render(app: Dash) -> html.Div:
                     y="total_shift",
                     title="Nurse Work Time Distribution",
                 )
-                fig.update_layout(autosize=False, width=500, height=500)
+                fig.update_layout(
+                    autosize=False, width=500, height=500, yaxis_title="Hours worked"
+                )
                 mean_value = round(dff["total_shift"].mean(), 2)
                 fig.add_annotation(
                     text=f"Mean nr hrs worked: {mean_value}",

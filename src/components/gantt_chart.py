@@ -48,7 +48,9 @@ def render(app: Dash) -> html.Div:
                 )
                 fig.update_xaxes(tickformat="%H:%M")
 
-                fig.update_layout(autosize=False, width=1400, height=500)
+                fig.update_layout(
+                    autosize=False, width=1400, height=500, title="Working schedule"
+                )
 
                 return html.Div(dcc.Graph(figure=fig), id="my_gantt")
 
