@@ -1,10 +1,5 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Wed Jan 11 11:10:34 2023
-@author: K. B. Arik
-Enjoy reading :)
-"""
 
 # =============================================================================
 # Required libraries & modules
@@ -64,7 +59,7 @@ def calculate_obj(clients, jobs, days, sol, nurses, objective="minmax"):
         # min max objective:
         return minmax
     elif objective == "total":
-        # min total objective, if you want to switch it:
+        # min total objective
         return total
 
 def check_overlap(a, b):
@@ -78,7 +73,6 @@ def check_overlap(a, b):
 def check_eight_hours_feasibility(w, nurse, check_job, check_day, jobs):
     # check for nurse i and day d
     # return True if feasible
-    # the following definitions may change
 
     if not w[nurse, check_day]:
         return True
@@ -138,9 +132,7 @@ def calculate_start_time(w_init, nurse, job, day, jobs):
                 else:
                     return max(jobs[job]['tw_start'], w[i][1])
 
-    #check all jobs
-
-    #check after jobs
+      #check after jobs
     if jobs[job]['tw_due'] >= w[len(w)-1][1]:
         return max(w[len(w)-1][1], jobs[job]['tw_start'])
 
@@ -410,7 +402,7 @@ def assign_to_other_nurses(
                 if cand_i != number_nurses:
                     # if this job fits the schedule of a nurse, choose her as a candidate for this job
                     start_time = calculate_start_time(w_init, cand_i, cand_j, cand_d, jobs)
-                    if start_time == -1:  # but will not be feasible so we could immediately state that.
+                    if start_time == -1:
                         feasible = False
                     else:
                         tw_new = [start_time, start_time + jobs[j]['duration'] + traveling_time]
@@ -441,7 +433,7 @@ def assign_to_other_nurses(
                     if cand_i != number_nurses:
                         # if this job fits the schedule of a nurse, choose her as a candidate for this job
                         start_time = calculate_start_time(w_init, cand_i, cand_j, cand_d, jobs)
-                        if start_time == -1:  # but will not be feasible so we could immediately state that.
+                        if start_time == -1:
                             feasible = False
                         else:
                             tw_new = [start_time, start_time + jobs[j]['duration'] + traveling_time]
@@ -482,7 +474,7 @@ def assign_to_other_nurses(
                 if cand_i != number_nurses:
                     # if this job fits the schedule of a nurse, choose her as a candidate for this job
                     start_time = calculate_start_time(w_init, cand_i, cand_j, cand_d, jobs)
-                    if start_time == -1:  # but will not be feasible so we could immediately state that.
+                    if start_time == -1:
                         feasible = False
                     else:
                         tw_new = [start_time, start_time + jobs[j]['duration'] + traveling_time]
@@ -530,7 +522,6 @@ def assign_to_other_nurses(
         t_init[number_nurses, cand_d, cand_j] = tw_new
 
     return number_nurses, nurses, w_init, z_init, t_init, cand_j, cand_d
-
 
 def generate_initial_solution(init_method, search_previous, jobs, days, clients):
     # generate initial solution
@@ -681,8 +672,6 @@ def generate_initial_solution(init_method, search_previous, jobs, days, clients)
             for d in days:
                 if jobs[j][d] == 1:
                     z[j, d] = z_init[j, d]
-    # time slots that nurse i is busy on day d:
-    #w = find_w(nurses, z, jobs, days)
 
     sol = {"z": z, "w": w_init, "t": t_init}
 
@@ -730,10 +719,6 @@ def generate_neighbour(sol, nurses, prob1, prob2, jobs, days, clients):
                 minn = len(cand_c_list[i])
                 cand_i = i
         cand_j, cand_d = random.choice(cand_c_list[cand_i])
-        #tw_new = [
-        #    jobs[cand_j]["tw_start"],
-        #    jobs[cand_j]["tw_start"] + jobs[cand_j]["duration"],
-        #]
 
         # try to assign it to other nurses seeing that client
         new_i_list = []
@@ -772,10 +757,7 @@ def generate_neighbour(sol, nurses, prob1, prob2, jobs, days, clients):
         else:
             # assign to random nurse
             new_i_list = []
-            #tw_new = [
-            #    jobs[cand_j]["tw_start"],
-            #    jobs[cand_j]["tw_start"] + jobs[cand_j]["duration"] + traveling_time,
-            #]
+
             found_one = False
             for i in nurses:
                 if i != cand_i:
@@ -870,7 +852,7 @@ def generate_neighbour(sol, nurses, prob1, prob2, jobs, days, clients):
                         if sol["w"][i, cand_d]:
                             start_time = calculate_start_time(sol["w"], i, cand_j, cand_d, jobs)
                             if start_time == -1:
-                                time_window = [jobs[j]["tw_start"], jobs[j]["tw_start"] + jobs[j]["duration"] + traveling_time] #but will not be possible
+                                time_window = [jobs[j]["tw_start"], jobs[j]["tw_start"] + jobs[j]["duration"] + traveling_time]
                             else:
                                 time_window = [start_time, start_time + jobs[cand_j]["duration"] + traveling_time]
                             if check_eight_hours_feasibility_start(sol["w"], i, time_window, cand_d):
@@ -1023,7 +1005,7 @@ def greedy_algorithm(sol, nurses, time_limit, jobs, days, clients):
 
         # keep track of number of steps in case of comparison with SA
         current = timer()
-        # bored of waiting ? (not necessary)
+
         if current - start > time_limit:
             print("Time limit is reached!")
             break
@@ -1038,7 +1020,7 @@ def greedy_algorithm(sol, nurses, time_limit, jobs, days, clients):
 
             step += 1
 
-            # some plots:
+
     plt.plot(nurse_list)
     plt.ylabel("number of nurses")
     plt.show()
@@ -1150,7 +1132,6 @@ def SA_algorithm(
         else:
             step += 1
             T = T * 0.995
-            # print(T)
 
     # some plots:
     plt.plot(nurse_list)
@@ -1174,10 +1155,9 @@ def SA_algorithm(
 # clients = sets['clients']
 
 # Number of other nurses to check when the current nurse is not feasible.
-# Currently, the algorihtm selects all nurses as a candidate
+# Currently, the algorithm selects all nurses as a candidate
 # If you, for example, set search_previous=5, it will check 5 nurses' schedule
 # If none of them feasible, it adds one nurse to the system.
-# No need to change, but you can try some other values.
 # search_previous = len(jobs) * len(days)
 
 # number of steps to be taken by SA
@@ -1198,14 +1178,6 @@ prob2 = 0.1
 # initial probability for simulated annealing algorithm transition
 prob_init = 0.95
 
-# If there is no improvement in last #stagnation steps, terminate the algorithm
-# stagnation = step_max / 5
-
-# objective function:
-# "total": minimize the total number of nurses seen by clients
-# "minmax": minimize the max number of nurses seen by clients
-# objective = "minmax"
-
 # method for finding the initial solution:
 # "worst": the worst solution
 # "heuristic": heuristic solution
@@ -1213,56 +1185,3 @@ init_method = "heuristic"
 
 #standard traveling time
 traveling_time = 5
-# =============================================================================
-# Run algorithms:
-# =============================================================================
-
-# algorihtms
-
-print("-----HEURISTIC-----")
-# start = timer()
-# number_of_nurses = 12
-# sol_heuristic, nurses_heuristic = heuristic(number_of_nurses, search_previous)
-# obj_heuristic = calculate_obj(sol_heuristic, nurses_heuristic)
-# sol_approx, nurses_approx = generate_initial_solution('heuristic', search_previous)
-# obj_approx = calculate_obj(sol_approx, nurses_approx)
-# # number of nurses needed approximately:
-# print("Approximate number of nurses needed by heuristic: ", len(nurses_approx))
-# print("Computation time:", timer() - start, "seconds")
-#
-# print("Initial objective value for", len(nurses_heuristic), "nurses : ", obj_heuristic)
-# print("Check feasibility:", check_final_feasibility(nurses_heuristic, sol_heuristic))
-
-
-# print("\n-----GREEDY ALGORITHM-----")
-#
-# start = timer()
-# sol,nurses = generate_initial_solution(init_method,search_previous)
-# obj=calculate_obj(sol,nurses)
-#
-# final_sol, obj_list = greedy_algorithm(sol,nurses,time_limit)
-# print("Number of nurses found by greedy algorithm: ", len(nurses))
-# #print(final_sol)
-#
-# print("Objective falue for", objective,"number of nurses seen: ", obj_list[-1])
-# print("Check feasibility of the final solution:", check_final_feasibility(nurses,final_sol))
-#
-#
-#
-# print("\n-----SIMULATED ANNEALING ALGORITHM-----")
-#
-# start = timer()
-avg_over = 500
-# initial_temperature = find_temperature(prob1,prob2,search_previous,avg_over,prob_init)
-# print("Initial temperature:", initial_temperature)
-# print("Computation time:",timer()-start,"seconds for finding the initial temperature")
-#
-# sol,nurses = generate_initial_solution(init_method,search_previous)
-# final_sol, obj_list = SA_algorithm(sol,nurses, step_max, time_limit,stagnation,initial_temperature,number_of_nurses)
-# print("Number of nurses found by simulated annealing algorithm: ", len(nurses))
-# #print(final_sol)
-#
-# print("Objective value for",objective,"number of nurses seen:", obj_list[-1])
-# print("Check feasibility of the final solution:",check_final_feasibility(nurses,final_sol))
-# """
-#
